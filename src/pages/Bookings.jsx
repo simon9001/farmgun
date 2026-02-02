@@ -5,7 +5,7 @@ import * as z from 'zod';
 import { useCreateBookingMutation, useGetSlotsQuery } from '../features/Api/bookingsApi';
 import { useGetPublicServicesQuery } from '../features/Api/publicApi';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Clock, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, Loader2, CheckCircle, AlertCircle, Phone } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const bookingSchema = z.object({

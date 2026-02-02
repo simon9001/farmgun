@@ -36,10 +36,12 @@ const Header = memo(({ toggleTheme, currentTheme, onHamburgerClick }) => {
     { to: "/about", label: "About" },
     { to: "/contact", label: "Contact" },
     ...(isAuthenticated ? [
-      { to: "/dashboard", label: "Dashboard" },
+      ...(user?.role === 'admin'
+        ? [{ to: "/admin", label: "Admin Panel" }]
+        : [{ to: "/dashboard", label: "Dashboard" }]),
       { to: "/services", label: "Services" }
     ] : [])
-  ], [isAuthenticated]);
+  ], [isAuthenticated, user]);
 
   return (
     <motion.header

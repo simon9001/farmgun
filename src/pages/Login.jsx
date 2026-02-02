@@ -31,7 +31,13 @@ const Login = () => {
             const result = await login(data).unwrap();
             // Backend returns { user, token }
             dispatch(setCredentials({ ...result, isAuthenticated: true }));
-            navigate(from, { replace: true });
+
+            // Redirect based on role
+            if (result.user?.role === 'admin') {
+                navigate('/admin', { replace: true });
+            } else {
+                navigate(from, { replace: true });
+            }
         } catch (err) {
             console.error('Login failed:', err);
         }

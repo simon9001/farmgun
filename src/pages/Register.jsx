@@ -33,7 +33,13 @@ const Register = () => {
         try {
             const result = await registerUser(data).unwrap();
             dispatch(setCredentials({ ...result, isAuthenticated: true }));
-            navigate('/dashboard');
+
+            // Redirect based on role
+            if (result.user?.role === 'admin') {
+                navigate('/admin');
+            } else {
+                navigate('/dashboard');
+            }
         } catch (err) {
             console.error('Registration failed:', err);
         }

@@ -4,15 +4,15 @@ import { baseQueryWithReauth } from './baseQuery';
 export const adminApi = createApi({
     reducerPath: 'adminApi',
     baseQuery: baseQueryWithReauth,
-    tagTypes: ['Users', 'Dashboard', 'Tips'],
+    tagTypes: ['Users', 'Dashboard', 'Tips', 'Services', 'Crops', 'Projects', 'Bookings'],
     endpoints: (builder) => ({
-        // Dashboard stats
+        // ... (Dashboard)
         getDashboardStats: builder.query({
             query: () => '/admin/dashboard/stats',
             providesTags: ['Dashboard'],
         }),
 
-        // Get all users
+        // ... (Users)
         getAllUsers: builder.query({
             query: ({ limit = 50, offset = 0 } = {}) => ({
                 url: '/admin/users',
@@ -21,12 +21,11 @@ export const adminApi = createApi({
             providesTags: ['Users'],
         }),
 
-        // Get user details
         getUserDetails: builder.query({
             query: (id) => `/admin/users/${id}`,
+            providesTags: (result, error, id) => [{ type: 'Users', id }],
         }),
 
-        // Update user role
         updateUserRole: builder.mutation({
             query: ({ id, role }) => ({
                 url: `/admin/users/${id}/role`,
@@ -36,6 +35,104 @@ export const adminApi = createApi({
             invalidatesTags: ['Users'],
         }),
 
+        // ... (Services)
+        createService: builder.mutation({
+            query: (service) => ({
+                url: '/admin/services',
+                method: 'POST',
+                body: service,
+            }),
+            invalidatesTags: ['Services', 'Dashboard'],
+        }),
+
+        updateService: builder.mutation({
+            query: ({ id, ...service }) => ({
+                url: `/admin/services/${id}`,
+                method: 'PATCH',
+                body: service,
+            }),
+            invalidatesTags: ['Services', 'Dashboard'],
+        }),
+
+        deleteService: builder.mutation({
+            query: (id) => ({
+                url: `/admin/services/${id}`,
+                method: 'DELETE',
+            }),
+            invalidatesTags: ['Services', 'Dashboard'],
+        }),
+
+        // ... (Crops)
+        createCrop: builder.mutation({
+            query: (crop) => ({
+                url: '/admin/crops',
+                method: 'POST',
+                body: crop,
+            }),
+            invalidatesTags: ['Crops', 'Dashboard'],
+        }),
+
+        updateCrop: builder.mutation({
+            query: ({ id, ...crop }) => ({
+                url: `/admin/crops/${id}`,
+                method: 'PATCH',
+                body: crop,
+            }),
+            invalidatesTags: ['Crops', 'Dashboard'],
+        }),
+
+        deleteCrop: builder.mutation({
+            query: (id) => ({
+                url: `/admin/crops/${id}`,
+                method: 'DELETE',
+            }),
+            invalidatesTags: ['Crops', 'Dashboard'],
+        }),
+
+        // ... (Projects)
+        createProject: builder.mutation({
+            query: (project) => ({
+                url: '/admin/projects',
+                method: 'POST',
+                body: project,
+            }),
+            invalidatesTags: ['Projects', 'Dashboard'],
+        }),
+
+        updateProject: builder.mutation({
+            query: ({ id, ...project }) => ({
+                url: `/admin/projects/${id}`,
+                method: 'PATCH',
+                body: project,
+            }),
+            invalidatesTags: ['Projects', 'Dashboard'],
+        }),
+
+        deleteProject: builder.mutation({
+            query: (id) => ({
+                url: `/admin/projects/${id}`,
+                method: 'DELETE',
+            }),
+            invalidatesTags: ['Projects', 'Dashboard'],
+        }),
+
+        // ... (Bookings)
+        getAllBookings: builder.query({
+            query: (params) => ({
+                url: '/admin/bookings',
+                params,
+            }),
+            providesTags: ['Bookings', 'Dashboard'],
+        }),
+
+        updateBooking: builder.mutation({
+            query: ({ id, ...data }) => ({
+                url: `/admin/bookings/${id}`,
+                method: 'PATCH',
+                body: data,
+            }),
+            invalidatesTags: ['Bookings', 'Dashboard'],
+        }),
         // Tips management
         createTip: builder.mutation({
             query: (tip) => ({
@@ -62,6 +159,44 @@ export const adminApi = createApi({
             }),
             invalidatesTags: ['Tips'],
         }),
+
+        // Settings
+        getSettings: builder.query({
+            query: () => '/admin/settings',
+        }),
+
+        updateSettings: builder.mutation({
+            query: (settings) => ({
+                url: '/admin/settings',
+                method: 'PATCH',
+                body: settings,
+            }),
+        }),
+
+        // Export data
+        exportData: builder.query({
+            query: (type) => ({
+                url: '/admin/export',
+                params: { type },
+            }),
+        }),
+
+        // Testimonials
+        approveTestimonial: builder.mutation({
+            query: (id) => ({
+                url: `/admin/testimonials/${id}/approve`,
+                method: 'PATCH',
+            }),
+            invalidatesTags: ['Dashboard'],
+        }),
+
+        deleteTestimonial: builder.mutation({
+            query: (id) => ({
+                url: `/admin/testimonials/${id}`,
+                method: 'DELETE',
+            }),
+            invalidatesTags: ['Dashboard'],
+        }),
     }),
 });
 
@@ -70,7 +205,23 @@ export const {
     useGetAllUsersQuery,
     useGetUserDetailsQuery,
     useUpdateUserRoleMutation,
+    useCreateServiceMutation,
+    useUpdateServiceMutation,
+    useDeleteServiceMutation,
+    useCreateCropMutation,
+    useUpdateCropMutation,
+    useDeleteCropMutation,
+    useCreateProjectMutation,
+    useUpdateProjectMutation,
+    useDeleteProjectMutation,
+    useGetAllBookingsQuery,
+    useUpdateBookingMutation,
     useCreateTipMutation,
     useUpdateTipMutation,
     useDeleteTipMutation,
+    useGetSettingsQuery,
+    useUpdateSettingsMutation,
+    useLazyExportDataQuery,
+    useApproveTestimonialMutation,
+    useDeleteTestimonialMutation,
 } = adminApi;

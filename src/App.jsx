@@ -11,6 +11,7 @@ import Bookings from './pages/Bookings';
 import Projects from './pages/Projects';
 import Testimonials from './pages/Testimonials';
 import UserRoute from './components/auth/UserRoute';
+import AdminRoute from './components/auth/AdminRoute';
 
 // Import pages
 import Home from "./pages/Home";
@@ -141,11 +142,11 @@ const AnimatedRoutes = memo(() => {
         <Route
           path="/admin"
           element={
-            <UserRoute>
+            <AdminRoute>
               <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
                 <AdminDashboard />
               </motion.div>
-            </UserRoute>
+            </AdminRoute>
           }
         />
       </Routes>
