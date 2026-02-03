@@ -95,8 +95,8 @@ const Dashboard = () => {
                     <button
                         onClick={() => setActiveTab('bookings')}
                         className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'bookings'
-                                ? 'bg-white dark:bg-gray-800 text-green-600 shadow-sm ring-1 ring-border'
-                                : 'text-muted-foreground hover:text-foreground'
+                            ? 'bg-white dark:bg-gray-800 text-green-600 shadow-sm ring-1 ring-border'
+                            : 'text-muted-foreground hover:text-foreground'
                             }`}
                     >
                         <Calendar className="w-4 h-4" />
@@ -110,8 +110,8 @@ const Dashboard = () => {
                     <button
                         onClick={() => setActiveTab('notifications')}
                         className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all relative ${activeTab === 'notifications'
-                                ? 'bg-white dark:bg-gray-800 text-green-600 shadow-sm ring-1 ring-border'
-                                : 'text-muted-foreground hover:text-foreground'
+                            ? 'bg-white dark:bg-gray-800 text-green-600 shadow-sm ring-1 ring-border'
+                            : 'text-muted-foreground hover:text-foreground'
                             }`}
                     >
                         <Bell className="w-4 h-4" />
@@ -200,7 +200,7 @@ const Dashboard = () => {
                                                 </div>
                                             </div>
 
-                                            {booking.meeting_link && (
+                                            {booking.meeting_link ? (
                                                 <a
                                                     href={booking.meeting_link}
                                                     target="_blank"
@@ -211,13 +211,13 @@ const Dashboard = () => {
                                                     Join Meeting
                                                 </a>
                                             ) : booking.status === 'confirmed' || booking.status === 'paid' ? (
-                                            <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-2xl border border-green-100 dark:border-green-800 text-center">
-                                                <p className="text-xs text-green-700 dark:text-green-400 font-medium">Link will be shared before the session</p>
-                                            </div>
+                                                <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-2xl border border-green-100 dark:border-green-800 text-center">
+                                                    <p className="text-xs text-green-700 dark:text-green-400 font-medium">Link will be shared before the session</p>
+                                                </div>
                                             ) : booking.status === 'pending' ? (
-                                            <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-2xl border border-yellow-100 dark:border-yellow-800 text-center">
-                                                <p className="text-xs text-yellow-700 dark:text-yellow-400 font-medium">Complete payment to confirm</p>
-                                            </div>
+                                                <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-2xl border border-yellow-100 dark:border-yellow-800 text-center">
+                                                    <p className="text-xs text-yellow-700 dark:text-yellow-400 font-medium">Complete payment to confirm</p>
+                                                </div>
                                             ) : null}
                                         </motion.div>
                                     ))}
@@ -277,13 +277,13 @@ const Dashboard = () => {
                                             key={notif.id}
                                             layout
                                             className={`group flex gap-4 p-5 rounded-3xl border transition-all duration-300 ${notif.is_read
-                                                    ? 'bg-white/40 dark:bg-gray-900/40 border-border/50 opacity-80'
-                                                    : 'bg-white dark:bg-gray-900 border-green-100 dark:border-green-900/30 shadow-sm'
+                                                ? 'bg-white/40 dark:bg-gray-900/40 border-border/50 opacity-80'
+                                                : 'bg-white dark:bg-gray-900 border-green-100 dark:border-green-900/30 shadow-sm'
                                                 }`}
                                         >
                                             <div className={`w-12 h-12 rounded-2xl flex-shrink-0 flex items-center justify-center ${notif.type === 'booking_confirmation'
-                                                    ? 'bg-green-50 dark:bg-green-900/20 text-green-600'
-                                                    : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600'
+                                                ? 'bg-green-50 dark:bg-green-900/20 text-green-600'
+                                                : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600'
                                                 }`}>
                                                 {notif.type === 'booking_confirmation' ? <CheckCircle className="w-6 h-6" /> : <Bell className="w-6 h-6" />}
                                             </div>
