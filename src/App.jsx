@@ -20,9 +20,8 @@ import Contact from "./components/Contact";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import AdminDashboard from "./pages/AdminDashboard";
+import Dashboard from "./pages/Dashboard";
 
-// Placeholder Dashboard until we create it properly
-const Dashboard = () => <div className="p-8 text-center text-2xl font-bold">Welcome to your Dashboard! <br /><span className="text-base font-normal">Services and Bookings coming soon.</span></div>;
 
 // --- NEW AWESOME BACKGROUND ---
 export const StaticBackground = memo(({ theme }) => {

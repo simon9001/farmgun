@@ -15,7 +15,7 @@ export const bookingsApi = createApi({
             invalidatesTags: ['Bookings'],
         }),
         getMyBookings: builder.query({
-            query: () => '/bookings/my-bookings',
+            query: () => '/bookings',
             providesTags: ['Bookings'],
         }),
         getSlots: builder.query({
