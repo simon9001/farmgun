@@ -1,10 +1,6 @@
 import { motion } from "framer-motion";
 import { memo } from "react";
-// Using a placeholder image or removing it if not provided. Keeping structure.
-// You might want to remove the import Simon from '../assets/Simon Pass.jpg';
-// and use a placeholder or generic farm image if available, or just text.
-// I will comment out the image import and usage for now to avoid breaking if file missing/irrelevant.
-// import Simon from '../assets/Simon Pass.jpg'; 
+import ProfileImage from '../assets/WhatsApp Image 2026-02-02 at 20.47.23.jpeg';
 
 export default memo(function About() {
   return (
@@ -45,6 +41,28 @@ export default memo(function About() {
             I created Farm with Irene to share everything I’ve learned — the real, practical tips that actually work in our soil and climate. If you're someone who wants to farm smarter, make fewer mistakes, and grow with confidence, you're in the right place.
           </p>
 
+        </motion.div>
+
+        {/* Image */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="flex-1 w-full max-w-md"
+        >
+          <div className="relative group">
+            <div className="absolute -inset-1 bg-gradient-to-r from-green-600 to-green-400 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+            <div className="relative aspect-[4/5] rounded-2xl overflow-hidden shadow-2xl border border-white/10">
+              <img
+                src={ProfileImage}
+                alt="Irene Mwangi"
+                className="w-full h-full object-cover transform transition duration-500 group-hover:scale-110"
+              />
+            </div>
+            {/* Decorative elements */}
+            <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-green-100 dark:bg-green-900/30 rounded-full -z-10 blur-2xl"></div>
+            <div className="absolute -top-6 -left-6 w-32 h-32 bg-green-50 dark:bg-green-900/20 rounded-full -z-10 blur-3xl"></div>
+          </div>
         </motion.div>
       </div>
     </motion.div>
