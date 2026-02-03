@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Star, Quote, Loader2, Lightbulb, ChevronDown, ChevronUp } from 'lucide-react';
 import {

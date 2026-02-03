@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Bell, Users, BarChart3, Send, Loader2, Check,
@@ -196,11 +196,10 @@ const OverviewTab = ({ stats, loading }) => {
         { name: 'Conversion', value: `${overview.conversion_rate || 0}%`, icon: Check, color: 'text-orange-600', bg: 'bg-orange-100 dark:bg-orange-900/20' },
     ];
 
+    const [triggerExport, { isLoading: exporting }] = useLazyExportDataQuery();
     if (loading) return <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-pulse">
         {[1, 2, 3, 4].map(i => <div key={i} className="h-32 bg-gray-200 dark:bg-gray-700 rounded-2xl" />)}
     </div>;
-
-    const [triggerExport, { isLoading: exporting }] = useLazyExportDataQuery();
 
     const handleExport = async () => {
         try {
