@@ -40,6 +40,7 @@ import {
 const AdminDashboard = () => {
     const user = useSelector(selectCurrentUser);
     const [activeTab, setActiveTab] = useState('overview');
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const { data: statsData, isLoading: statsLoading } = useGetDashboardStatsQuery();
 
     if (user?.role !== 'admin') {
@@ -64,23 +65,62 @@ const AdminDashboard = () => {
         { id: 'settings', name: 'System Settings', icon: Settings },
     ];
 
+    const renderTabContent = () => {
+        switch (activeTab) {
+            case 'overview': return <OverviewTab stats={statsData?.stats} loading={statsLoading} />;
+            case 'bookings': return <BookingsTab />;
+            case 'services': return <ServicesTab />;
+            case 'users': return <UsersTab />;
+            case 'crops': return <CropsTab />;
+            case 'blog': return <BlogTab />;
+            case 'projects': return <ProjectsTab />;
+            case 'testimonials': return <TestimonialsTab />;
+            case 'settings': return <SettingsTab />;
+            default: return <OverviewTab stats={statsData?.stats} loading={statsLoading} />;
+        }
+    };
+
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex overflow-hidden">
+            {/* Mobile Sidebar Overlay */}
+            <AnimatePresence>
+                {isSidebarOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setIsSidebarOpen(false)}
+                        className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm"
+                    />
+                )}
+            </AnimatePresence>
+
             {/* Sidebar */}
-            <aside className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 hidden lg:flex flex-col sticky top-0 h-screen">
-                <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <aside className={`
+                fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 
+                transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-auto
+                ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+                flex flex-col h-screen
+            `}>
+                <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
                     <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                         <LayoutDashboard className="w-5 h-5 text-green-600" />
                         Admin Panel
                     </h2>
+                    <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                        <Plus className="w-5 h-5 rotate-45" />
+                    </button>
                 </div>
-                <nav className="flex-1 p-4 space-y-1">
+                <nav className="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar">
                     {navigation.map((item) => (
                         <button
                             key={item.id}
-                            onClick={() => setActiveTab(item.id)}
+                            onClick={() => {
+                                setActiveTab(item.id);
+                                setIsSidebarOpen(false);
+                            }}
                             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === item.id
-                                ? 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400'
+                                ? 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400 shadow-sm'
                                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                                 }`}
                         >
@@ -98,13 +138,21 @@ const AdminDashboard = () => {
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 min-w-0 overflow-auto">
-                <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-20">
+            <main className="flex-1 min-w-0 flex flex-col h-screen overflow-hidden">
+                <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 z-30 shrink-0">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-                        <h1 className="text-xl font-bold text-gray-900 dark:text-white capitalize">
-                            {activeTab.replace('_', ' ')}
-                        </h1>
                         <div className="flex items-center gap-4">
+                            <button
+                                onClick={() => setIsSidebarOpen(true)}
+                                className="lg:hidden p-2 -ml-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                            >
+                                <Filter className="w-6 h-6" />
+                            </button>
+                            <h1 className="text-xl font-bold text-gray-900 dark:text-white capitalize truncate max-w-[150px] sm:max-w-none">
+                                {activeTab.replace('_', ' ')}
+                            </h1>
+                        </div>
+                        <div className="flex items-center gap-2 sm:gap-4">
                             <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors relative">
                                 <Bell className="w-6 h-6" />
                                 <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-gray-800"></span>
@@ -116,26 +164,20 @@ const AdminDashboard = () => {
                     </div>
                 </header>
 
-                <div className="p-6">
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={activeTab}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            transition={{ duration: 0.2 }}
-                        >
-                            {activeTab === 'overview' && <OverviewTab stats={statsData?.stats} loading={statsLoading} />}
-                            {activeTab === 'bookings' && <BookingsTab />}
-                            {activeTab === 'services' && <ServicesTab />}
-                            {activeTab === 'users' && <UsersTab />}
-                            {activeTab === 'crops' && <CropsTab />}
-                            {activeTab === 'blog' && <BlogTab />}
-                            {activeTab === 'projects' && <ProjectsTab />}
-                            {activeTab === 'testimonials' && <TestimonialsTab />}
-                            {activeTab === 'settings' && <SettingsTab />}
-                        </motion.div>
-                    </AnimatePresence>
+                <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900 lg:p-6 p-4">
+                    <div className="max-w-7xl mx-auto">
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={activeTab}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                {renderTabContent()}
+                            </motion.div>
+                        </AnimatePresence>
+                    </div>
                 </div>
             </main>
         </div>
