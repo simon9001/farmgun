@@ -46,7 +46,7 @@ const Home = () => {
                                 <span className="text-sm font-medium">Tips</span>
                                 {forceShowTips ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                             </button>
-                            
+
                             <AnimatePresence>
                                 {forceShowTips && (
                                     <motion.div
@@ -57,7 +57,7 @@ const Home = () => {
                                     >
                                         <div className="max-h-60 overflow-y-auto no-scrollbar">
                                             {tips.map((tip) => (
-                                                <div 
+                                                <div
                                                     key={tip.id}
                                                     className="p-3 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-xl transition-colors cursor-default"
                                                 >
@@ -357,7 +357,10 @@ const Home = () => {
                     )}
 
                     <div className="text-center mt-12">
-                        <Link to="/testimonials" className="inline-block bg-green-100 text-green-700 hover:bg-green-200 px-6 py-2 rounded-lg font-medium transition-colors">
+                        <Link
+                            to="/testimonials"
+                            className="inline-block bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 px-8 py-3 rounded-xl font-bold transition-all transform hover:scale-105 shadow-md hover:shadow-lg"
+                        >
                             Read More Success Stories
                         </Link>
                     </div>
@@ -371,7 +374,10 @@ const Home = () => {
                     <p className="text-xl text-green-50 mb-8">
                         Book a consultation today and let's start your journey to sustainable and profitable farming.
                     </p>
-                    <Link to="/booking" className="inline-block bg-white text-green-700 px-10 py-4 rounded-full font-bold text-lg hover:bg-green-50 transition-colors shadow-xl">
+                    <Link
+                        to="/booking"
+                        className="inline-block bg-white text-green-700 dark:bg-green-500 dark:text-white px-10 py-4 rounded-full font-bold text-lg transition-all transform hover:scale-105 hover:bg-green-50 dark:hover:bg-green-400 shadow-xl hover:shadow-2xl"
+                    >
                         Book an Appointment Now
                     </Link>
                 </div>

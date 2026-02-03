@@ -77,7 +77,7 @@ const Services = () => {
                                     </span>
                                     <Link
                                         to={`/booking?serviceId=${service.id}`}
-                                        className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition-colors"
+                                        className="px-6 py-2.5 rounded-xl bg-green-600 text-white text-sm font-bold hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-400 transition-all transform hover:scale-105 shadow-md hover:shadow-lg"
                                     >
                                         Book Now
                                     </Link>
