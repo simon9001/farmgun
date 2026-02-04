@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Star, Quote, Loader2, Lightbulb, ChevronDown, ChevronUp } from 'lucide-react';
@@ -10,6 +10,14 @@ import {
     useGetPublicTipsQuery
 } from '../features/Api/publicApi';
 import FloatingTips from '../components/FloatingTips';
+import About from '../components/About';
+
+const HERO_IMAGES = [
+    "https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1625246333195-098e4d975613?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1595841696677-6489b3f8aed1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1574943320219-55edeb70538d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80"
+];
 
 const Home = () => {
     // Fetch featured data
@@ -19,7 +27,16 @@ const Home = () => {
     const { data: servicesData, isLoading: servicesLoading } = useGetPublicServicesQuery({ featured: true, limit: 3 });
 
     const { data: tipsData } = useGetPublicTipsQuery({ limit: 5 });
-    const [forceShowTips, setForceShowTips] = React.useState(false);
+    const [forceShowTips, setForceShowTips] = useState(false);
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+    // Hero Image Slider Effect
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentImageIndex((prev) => (prev + 1) % HERO_IMAGES.length);
+        }, 5000);
+        return () => clearInterval(interval);
+    }, []);
 
     const featuredCrops = cropsData?.crops || [];
     const featuredProjects = projectsData?.projects || [];
@@ -79,11 +96,18 @@ const Home = () => {
 
                 <div className="absolute inset-0 z-0">
                     <div className="absolute inset-0 bg-black/50 z-10" />
-                    <img
-                        src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80"
-                        alt="Farm Landscape"
-                        className="w-full h-full object-cover"
-                    />
+                    <AnimatePresence mode="wait">
+                        <motion.img
+                            key={currentImageIndex}
+                            src={HERO_IMAGES[currentImageIndex]}
+                            initial={{ opacity: 0, scale: 1.1 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 1.5, ease: "easeOut" }}
+                            alt="Farm Landscape"
+                            className="absolute inset-0 w-full h-full object-cover"
+                        />
+                    </AnimatePresence>
                 </div>
 
                 <div className="relative z-20 text-center px-4 max-w-4xl mx-auto">
@@ -117,6 +141,11 @@ const Home = () => {
                         </Link>
                     </motion.div>
                 </div>
+            </section>
+
+            {/* About Section */}
+            <section className="bg-white dark:bg-gray-900 overflow-hidden">
+                <About />
             </section>
 
             {/* Featured Services Section */}
