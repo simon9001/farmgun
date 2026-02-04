@@ -150,7 +150,7 @@ const SideNav = memo(({ open, onClose }) => {
         initial={false}
         animate={open ? "open" : "closed"}
         variants={navVariants}
-        className="side-nav-panel fixed top-0 right-0 w-[85vw] max-w-[300px] h-screen bg-white dark:bg-gray-900 shadow-2xl z-50 flex flex-col p-6 pt-8 border-l border-green-100 dark:border-green-900 overflow-y-auto"
+        className="side-nav-panel fixed top-0 right-0 w-[85vw] max-w-[300px] h-[100dvh] bg-white dark:bg-gray-900 shadow-2xl z-50 flex flex-col p-6 pt-8 border-l border-green-100 dark:border-green-900 overflow-hidden"
         aria-label="Main Navigation"
       >
         {/* Close Button */}
@@ -165,12 +165,12 @@ const SideNav = memo(({ open, onClose }) => {
         </motion.button>
 
         {/* Navigation Links */}
-        <ul className="flex-1 space-y-6">
+        <ul className="flex-1 space-y-6 overflow-y-auto pr-2 -mr-2 no-scrollbar">
           {navItems}
         </ul>
 
         {/* Auth Buttons Footer */}
-        <motion.div variants={itemVariants} className="mt-auto border-t border-gray-100 dark:border-gray-800 pt-6">
+        <motion.div variants={itemVariants} className="mt-auto border-t border-gray-100 dark:border-gray-800 pt-6 flex-shrink-0 pb-4">
           {isAuthenticated ? (
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-3 px-2">
