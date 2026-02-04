@@ -35,6 +35,14 @@ export const adminApi = createApi({
             invalidatesTags: ['Users'],
         }),
 
+        deleteUser: builder.mutation({
+            query: (id) => ({
+                url: `/admin/users/${id}`,
+                method: 'DELETE',
+            }),
+            invalidatesTags: ['Users', 'Dashboard'],
+        }),
+
         // ... (Services)
         createService: builder.mutation({
             query: (service) => ({
@@ -197,6 +205,15 @@ export const adminApi = createApi({
             }),
             invalidatesTags: ['Dashboard'],
         }),
+
+        // Media
+        uploadMedia: builder.mutation({
+            query: (formData) => ({
+                url: '/media/upload',
+                method: 'POST',
+                body: formData,
+            }),
+        }),
     }),
 });
 
@@ -205,6 +222,8 @@ export const {
     useGetAllUsersQuery,
     useGetUserDetailsQuery,
     useUpdateUserRoleMutation,
+    useDeleteUserMutation,
+    useUploadMediaMutation,
     useCreateServiceMutation,
     useUpdateServiceMutation,
     useDeleteServiceMutation,

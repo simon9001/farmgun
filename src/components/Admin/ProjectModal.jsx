@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { X, Briefcase, Loader2, Check, AlertCircle, Save } from 'lucide-react';
 import { useCreateProjectMutation, useUpdateProjectMutation } from '../../features/Api/adminApi';
+import ImageUpload from '../common/ImageUpload';
 
 const ProjectModal = ({ isOpen, onClose, projectToEdit }) => {
     const [createProject, { isLoading: isCreating }] = useCreateProjectMutation();
@@ -12,7 +13,8 @@ const ProjectModal = ({ isOpen, onClose, projectToEdit }) => {
         description: '',
         status: 'ongoing',
         start_date: '',
-        end_date: ''
+        end_date: '',
+        featured_media_id: ''
     });
 
     const [status, setStatus] = useState(null);
@@ -24,7 +26,8 @@ const ProjectModal = ({ isOpen, onClose, projectToEdit }) => {
                 description: projectToEdit.description || '',
                 status: projectToEdit.status || 'ongoing',
                 start_date: projectToEdit.start_date || '',
-                end_date: projectToEdit.end_date || ''
+                end_date: projectToEdit.end_date || '',
+                featured_media_id: projectToEdit.featured_media_id || ''
             });
         }
     }, [projectToEdit]);
@@ -55,7 +58,7 @@ const ProjectModal = ({ isOpen, onClose, projectToEdit }) => {
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-2xl border border-gray-100 dark:border-gray-700 shadow-2xl overflow-hidden flex flex-col"
+                className="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-2xl border border-gray-100 dark:border-gray-700 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
             >
                 <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
                     <h2 className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
@@ -67,7 +70,7 @@ const ProjectModal = ({ isOpen, onClose, projectToEdit }) => {
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-6 overflow-y-auto">
                     <div className="space-y-1">
                         <label className="text-xs font-bold text-gray-500 uppercase">Project Title</label>
                         <input
@@ -90,6 +93,12 @@ const ProjectModal = ({ isOpen, onClose, projectToEdit }) => {
                             required
                         />
                     </div>
+
+                    <ImageUpload
+                        label="Project Feature Image"
+                        initialMediaId={form.featured_media_id}
+                        onUploadComplete={(mediaId) => setForm(prev => ({ ...prev, featured_media_id: mediaId }))}
+                    />
 
                     <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-1">
@@ -131,6 +140,7 @@ const ProjectModal = ({ isOpen, onClose, projectToEdit }) => {
                             Cancel
                         </button>
                         <button
+                            type="submit"
                             disabled={isCreating || isUpdating}
                             className="flex-[2] bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-100 dark:shadow-none"
                         >

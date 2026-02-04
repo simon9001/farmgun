@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { X, Sprout, Loader2, Check, AlertCircle } from 'lucide-react';
 import { useCreateCropMutation, useUpdateCropMutation } from '../../features/Api/adminApi';
+import ImageUpload from '../common/ImageUpload';
 
 const CropModal = ({ isOpen, onClose, cropToEdit }) => {
     const [createCrop, { isLoading: isCreating }] = useCreateCropMutation();
@@ -12,7 +13,8 @@ const CropModal = ({ isOpen, onClose, cropToEdit }) => {
         scientific_name: '',
         category: 'vegetable',
         growing_season: '',
-        description: ''
+        description: '',
+        featured_media_id: ''
     });
 
     const [status, setStatus] = useState(null);
@@ -24,7 +26,8 @@ const CropModal = ({ isOpen, onClose, cropToEdit }) => {
                 scientific_name: cropToEdit.scientific_name || '',
                 category: cropToEdit.category || 'vegetable',
                 growing_season: cropToEdit.growing_season || '',
-                description: cropToEdit.description || ''
+                description: cropToEdit.description || '',
+                featured_media_id: cropToEdit.featured_media_id || ''
             });
         }
     }, [cropToEdit]);
@@ -55,7 +58,7 @@ const CropModal = ({ isOpen, onClose, cropToEdit }) => {
             <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-lg border border-gray-100 dark:border-gray-700 shadow-2xl overflow-hidden"
+                className="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-lg border border-gray-100 dark:border-gray-700 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
             >
                 <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
                     <h2 className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
@@ -67,7 +70,7 @@ const CropModal = ({ isOpen, onClose, cropToEdit }) => {
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-8 space-y-5">
+                <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-5 overflow-y-auto">
                     <div className="space-y-1">
                         <label className="text-xs font-bold text-gray-500 uppercase">Crop Name</label>
                         <input
@@ -126,6 +129,12 @@ const CropModal = ({ isOpen, onClose, cropToEdit }) => {
                             placeholder="General information about the crop..."
                         />
                     </div>
+
+                    <ImageUpload
+                        label="Crop Feature Image"
+                        initialMediaId={form.featured_media_id}
+                        onUploadComplete={(mediaId) => setForm(prev => ({ ...prev, featured_media_id: mediaId }))}
+                    />
 
                     {status && (
                         <div className={`p-4 rounded-xl flex items-center gap-3 ${status.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>

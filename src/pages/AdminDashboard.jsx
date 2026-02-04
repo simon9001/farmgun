@@ -13,6 +13,7 @@ import ServiceModal from '../components/Admin/ServiceModal';
 import CropModal from '../components/Admin/CropModal';
 import PostModal from '../components/Admin/PostModal';
 import ProjectModal from '../components/Admin/ProjectModal';
+import BookingModal from '../components/Admin/BookingModal';
 import {
     useGetDashboardStatsQuery,
     useGetAllUsersQuery,
@@ -21,6 +22,7 @@ import {
     useDeleteServiceMutation,
     useDeleteCropMutation,
     useUpdateUserRoleMutation,
+    useDeleteUserMutation,
     useDeleteTipMutation,
     useDeleteProjectMutation,
     useUpdateSettingsMutation,
@@ -36,6 +38,7 @@ import {
     useGetPublicProjectsQuery,
     useGetPublicTestimonialsQuery
 } from '../features/Api/publicApi';
+import { exportBookingsToCSV, exportUsersToCSV, exportServicesToCSV } from '../utils/csvExport';
 
 const AdminDashboard = () => {
     const user = useSelector(selectCurrentUser);
@@ -196,22 +199,49 @@ const OverviewTab = ({ stats, loading }) => {
         { name: 'Conversion', value: `${overview.conversion_rate || 0}%`, icon: Check, color: 'text-orange-600', bg: 'bg-orange-100 dark:bg-orange-900/20' },
     ];
 
-    const [triggerExport, { isLoading: exporting }] = useLazyExportDataQuery();
+    // Fetch all data for export
+    const { data: bookingsData } = useGetAllBookingsQuery({});
+    const { data: usersData } = useGetAllUsersQuery({});
+    const { data: servicesData } = useGetServicesQuery();
+
+    const [isExporting, setIsExporting] = useState(false);
+
     if (loading) return <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-pulse">
         {[1, 2, 3, 4].map(i => <div key={i} className="h-32 bg-gray-200 dark:bg-gray-700 rounded-2xl" />)}
     </div>;
 
-    const handleExport = async () => {
+    const handleExportAll = async () => {
+        setIsExporting(true);
         try {
-            const data = await triggerExport('all').unwrap();
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `admin_export_${new Date().toISOString()}.json`;
-            a.click();
+            const timestamp = new Date().toISOString().split('T')[0];
+
+            // Export bookings
+            if (bookingsData?.bookings && bookingsData.bookings.length > 0) {
+                exportBookingsToCSV(bookingsData.bookings, `all_bookings_${timestamp}.csv`);
+                await new Promise(resolve => setTimeout(resolve, 500)); // Small delay between downloads
+            }
+
+            // Export users
+            if (usersData?.users && usersData.users.length > 0) {
+                exportUsersToCSV(usersData.users, `all_users_${timestamp}.csv`);
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
+            // Export services
+            if (servicesData?.services && servicesData.services.length > 0) {
+                exportServicesToCSV(servicesData.services, `all_services_${timestamp}.csv`);
+            }
+
+            // Show success message
+            setTimeout(() => {
+                alert('All data exported successfully! Check your downloads folder for 3 CSV files.');
+            }, 1000);
+
         } catch (err) {
-            alert('Export failed');
+            console.error('Export error:', err);
+            alert('Export failed. Please try again.');
+        } finally {
+            setIsExporting(false);
         }
     };
 
@@ -220,12 +250,12 @@ const OverviewTab = ({ stats, loading }) => {
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard Overview</h2>
                 <button
-                    onClick={handleExport}
-                    disabled={exporting}
-                    className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-bold hover:bg-gray-50 transition-colors"
+                    onClick={handleExportAll}
+                    disabled={isExporting}
+                    className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                    Export All Data
+                    {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                    {isExporting ? 'Exporting...' : 'Export All Data (CSV)'}
                 </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -274,7 +304,7 @@ const OverviewTab = ({ stats, loading }) => {
                     <SendNotificationForm />
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 
@@ -283,46 +313,144 @@ const SendNotificationForm = () => {
     const [sendNotification, { isLoading: sending }] = useSendNotificationMutation();
     const [form, setForm] = useState({ user_id: '', type: 'info', message: '' });
     const [status, setStatus] = useState(null);
+    const [isBroadcast, setIsBroadcast] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setStatus(null);
+
         try {
-            await sendNotification(form).unwrap();
-            setStatus({ success: true, message: 'Notification sent!' });
+            if (isBroadcast) {
+                // Send to all users
+                const users = usersData?.users || [];
+                if (users.length === 0) {
+                    setStatus({ success: false, message: 'No users found' });
+                    return;
+                }
+
+                let successCount = 0;
+                let failCount = 0;
+
+                for (const user of users) {
+                    try {
+                        await sendNotification({
+                            user_id: user.id,
+                            type: form.type,
+                            message: form.message
+                        }).unwrap();
+                        successCount++;
+                    } catch (err) {
+                        console.error(`Failed to send to user ${user.id}:`, err);
+                        failCount++;
+                    }
+                }
+
+                setStatus({
+                    success: true,
+                    message: `Broadcast sent to ${successCount} users${failCount > 0 ? ` (${failCount} failed)` : ''}`
+                });
+            } else {
+                // Send to single user
+                if (!form.user_id) {
+                    setStatus({ success: false, message: 'Please select a user' });
+                    return;
+                }
+
+                await sendNotification({
+                    user_id: form.user_id,
+                    type: form.type,
+                    message: form.message
+                }).unwrap();
+
+                setStatus({ success: true, message: 'Notification sent!' });
+            }
+
             setForm({ user_id: '', type: 'info', message: '' });
-            setTimeout(() => setStatus(null), 3000);
+            setTimeout(() => setStatus(null), 5000);
         } catch (err) {
-            setStatus({ success: false, message: 'Failed to send' });
+            console.error('Send notification error:', err);
+            const errorMsg = err?.data?.error || err?.message || 'Failed to send notification';
+            setStatus({ success: false, message: errorMsg });
         }
     };
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
-            <select
-                value={form.user_id}
-                onChange={e => setForm({ ...form, user_id: e.target.value })}
-                className="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 p-3 text-sm"
-                required
-            >
-                <option value="">Select Target User</option>
-                {usersData?.users?.map(u => (
-                    <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
-                ))}
-            </select>
-            <textarea
-                value={form.message}
-                onChange={e => setForm({ ...form, message: e.target.value })}
-                className="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 p-3 text-sm h-24"
-                placeholder="Type message here..."
-                required
-            />
+            {/* Broadcast Toggle */}
+            <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+                <input
+                    type="checkbox"
+                    id="broadcast"
+                    checked={isBroadcast}
+                    onChange={(e) => {
+                        setIsBroadcast(e.target.checked);
+                        if (e.target.checked) {
+                            setForm({ ...form, user_id: '' });
+                        }
+                    }}
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                />
+                <label htmlFor="broadcast" className="text-sm font-bold text-blue-900 dark:text-blue-100 cursor-pointer">
+                    Send to all users (Broadcast)
+                </label>
+            </div>
+
+            {/* User Selection - Only show if not broadcasting */}
+            {!isBroadcast && (
+                <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Recipient</label>
+                    <select
+                        value={form.user_id}
+                        onChange={e => setForm({ ...form, user_id: e.target.value })}
+                        className="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 p-3 text-sm"
+                        required={!isBroadcast}
+                    >
+                        <option value="">Select Target User</option>
+                        {usersData?.users?.map(u => (
+                            <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
+                        ))}
+                    </select>
+                </div>
+            )}
+
+            {/* Notification Type */}
+            <div>
+                <label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Type</label>
+                <select
+                    value={form.type}
+                    onChange={e => setForm({ ...form, type: e.target.value })}
+                    className="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 p-3 text-sm"
+                >
+                    <option value="info">Info</option>
+                    <option value="booking_confirmation">Booking Confirmation</option>
+                    <option value="reminder">Reminder</option>
+                    <option value="payment_receipt">Payment Receipt</option>
+                </select>
+            </div>
+
+            {/* Message */}
+            <div>
+                <label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Message</label>
+                <textarea
+                    value={form.message}
+                    onChange={e => setForm({ ...form, message: e.target.value })}
+                    className="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 p-3 text-sm h-24 resize-none"
+                    placeholder="Type your message here..."
+                    required
+                />
+            </div>
+
+            {/* Submit Button */}
             <button
+                type="submit"
                 disabled={sending}
-                className="w-full bg-green-600 text-white rounded-xl py-3 font-bold hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                className="w-full bg-green-600 text-white rounded-xl py-3 font-bold hover:bg-green-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
                 {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                Send Broadcast
+                {sending ? 'Sending...' : (isBroadcast ? 'Send Broadcast' : 'Send Notification')}
             </button>
+
+            {/* Status Message */}
             {status && (
                 <div className={`p-3 rounded-lg text-sm flex items-center gap-2 ${status.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
                     {status.success ? <Check className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
@@ -350,6 +478,14 @@ const BookingsTab = () => {
         }
     };
 
+    const handleExportCSV = () => {
+        if (bookings && bookings.length > 0) {
+            exportBookingsToCSV(bookings);
+        } else {
+            alert('No bookings to export');
+        }
+    };
+
     return (
         <>
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden text-sm">
@@ -362,7 +498,10 @@ const BookingsTab = () => {
                         <button className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-900 rounded-lg text-gray-600 dark:text-gray-400">
                             <Filter className="w-4 h-4" /> Filter
                         </button>
-                        <button className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg">
+                        <button
+                            onClick={handleExportCSV}
+                            className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                        >
                             <Download className="w-4 h-4" /> Export CSV
                         </button>
                     </div>
@@ -482,6 +621,14 @@ const ServicesTab = () => {
         setIsModalOpen(true);
     };
 
+    const handleExportCSV = () => {
+        if (services && services.length > 0) {
+            exportServicesToCSV(services);
+        } else {
+            alert('No services to export');
+        }
+    };
+
     return (
         <>
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden text-sm">
@@ -490,12 +637,20 @@ const ServicesTab = () => {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input type="text" placeholder="Search services..." className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border-none rounded-lg" />
                     </div>
-                    <button
-                        onClick={handleOpenCreate}
-                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition-colors"
-                    >
-                        <Plus className="w-4 h-4" /> Create Service
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={handleExportCSV}
+                            className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300 rounded-lg font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                        >
+                            <Download className="w-4 h-4" /> Export CSV
+                        </button>
+                        <button
+                            onClick={handleOpenCreate}
+                            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition-colors"
+                        >
+                            <Plus className="w-4 h-4" /> Create Service
+                        </button>
+                    </div>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
@@ -570,6 +725,7 @@ const ServicesTab = () => {
 const UsersTab = () => {
     const { data: usersData, isLoading } = useGetAllUsersQuery({});
     const [updateRole] = useUpdateUserRoleMutation();
+    const [deleteUser, { isLoading: isDeleting }] = useDeleteUserMutation();
     const [searchTerm, setSearchTerm] = useState('');
     const users = usersData?.users?.filter(u =>
         u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -581,6 +737,24 @@ const UsersTab = () => {
             await updateRole({ id, role: newRole }).unwrap();
         } catch (err) {
             alert('Failed to update role');
+        }
+    };
+
+    const handleDeleteUser = async (id, name) => {
+        if (window.confirm(`Are you sure you want to delete user "${name}"? This cannot be undone.`)) {
+            try {
+                await deleteUser(id).unwrap();
+            } catch (err) {
+                alert(err?.data?.error || 'Failed to delete user');
+            }
+        }
+    };
+
+    const handleExportCSV = () => {
+        if (users && users.length > 0) {
+            exportUsersToCSV(users);
+        } else {
+            alert('No users to export');
         }
     };
 
@@ -597,6 +771,12 @@ const UsersTab = () => {
                         className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border-none rounded-lg"
                     />
                 </div>
+                <button
+                    onClick={handleExportCSV}
+                    className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                    <Download className="w-4 h-4" /> Export CSV
+                </button>
             </div>
             <div className="overflow-x-auto">
                 <table className="w-full text-left">
@@ -607,6 +787,7 @@ const UsersTab = () => {
                             <th className="px-6 py-4">Role</th>
                             <th className="px-6 py-4">Status</th>
                             <th className="px-6 py-4">Joined</th>
+                            <th className="px-6 py-4">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -629,7 +810,7 @@ const UsersTab = () => {
                                         className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase border-none focus:ring-0 cursor-pointer ${u.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
                                             }`}
                                     >
-                                        <option value="user">User</option>
+                                        <option value="client">Client</option>
                                         <option value="admin">Admin</option>
                                     </select>
                                 </td>
@@ -640,6 +821,16 @@ const UsersTab = () => {
                                 </td>
                                 <td className="px-6 py-4 text-gray-400">
                                     {new Date(u.created_at).toLocaleDateString()}
+                                </td>
+                                <td className="px-6 py-4">
+                                    <button
+                                        onClick={() => handleDeleteUser(u.id, u.name)}
+                                        disabled={isDeleting || u.role === 'admin'} // Prevent deleting admins easily or allow it but warn
+                                        className="p-2 hover:bg-red-50 text-red-500 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title="Delete User"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
                                 </td>
                             </tr>
                         ))}

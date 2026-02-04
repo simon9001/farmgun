@@ -39,11 +39,21 @@ const ServiceModal = ({ isOpen, onClose, serviceToEdit }) => {
         setStatus(null);
 
         try {
+            const payload = {
+                ...form,
+                price: parseFloat(form.price),
+                duration_mins: parseInt(form.duration)
+            };
+            // Remove duration if it conflicts differently or map it correctly. 
+            // The schema expects duration_mins, but form has duration. 
+            // In init: duration: 30.
+            // Let's verify backend schema: duration_mins.
+
             if (serviceToEdit) {
-                await updateService({ id: serviceToEdit.id, ...form }).unwrap();
+                await updateService({ id: serviceToEdit.id, ...payload }).unwrap();
                 setStatus({ success: true, message: 'Service updated successfully!' });
             } else {
-                await createService(form).unwrap();
+                await createService(payload).unwrap();
                 setStatus({ success: true, message: 'Service created successfully!' });
             }
             setTimeout(() => {
@@ -143,8 +153,8 @@ const ServiceModal = ({ isOpen, onClose, serviceToEdit }) => {
                                     type="button"
                                     onClick={() => toggleCrop(crop.id)}
                                     className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${form.crops.includes(crop.id)
-                                            ? 'bg-green-600 border-green-600 text-white'
-                                            : 'border-gray-200 dark:border-gray-700 hover:border-green-600'
+                                        ? 'bg-green-600 border-green-600 text-white'
+                                        : 'border-gray-200 dark:border-gray-700 hover:border-green-600'
                                         }`}
                                 >
                                     <Sprout className="w-3 h-3" />
