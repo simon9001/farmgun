@@ -1,6 +1,7 @@
 import { useEffect, useCallback, memo, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
+  ShieldCheck,
   User,
   LayoutDashboard,
   Sprout,
@@ -114,7 +115,10 @@ const SideNav = memo(({ open, onClose }) => {
       { to: "/about", icon: User, text: "About" },
       { to: "/contact", icon: Mail, text: "Contact" },
       ...(isAuthenticated ? [
-        { to: "/dashboard", icon: LayoutDashboard, text: "Dashboard" },
+        ...(user?.role === 'admin'
+          ? [{ to: "/admin", icon: ShieldCheck, text: "Admin Panel" }]
+          : [{ to: "/dashboard", icon: LayoutDashboard, text: "Dashboard" }]
+        ),
         { to: "/services", icon: Sprout, text: "Services" }
       ] : [])
     ];
