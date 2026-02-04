@@ -7,9 +7,9 @@
  * - Resumes pings if the user is idle for 10 minutes OR if the tab is hidden.
  */
 
-const SERVER_URL = 'https://my-render-server.onrender.com/ping';
+const SERVER_URL = 'https://backendfarmgun.onrender.com/ping';
 const PING_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
-const IDLE_TIMEOUT_MS = 10 * 60 * 1000;  // 10 minutes
+const IDLE_TIMEOUT_MS = 20 * 60 * 1000;  // 20 minutes
 
 let pingIntervalId = null;
 let idleTimeoutId = null;
