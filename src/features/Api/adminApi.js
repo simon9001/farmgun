@@ -1,10 +1,6 @@
-import { createApi } from '@reduxjs/toolkit/query/react';
-import { baseQueryWithReauth } from './baseQuery';
+import { apiSlice } from './apiSlice';
 
-export const adminApi = createApi({
-    reducerPath: 'adminApi',
-    baseQuery: baseQueryWithReauth,
-    tagTypes: ['Users', 'Dashboard', 'Tips', 'Services', 'Crops', 'Projects', 'Bookings'],
+export const adminApi = apiSlice.injectEndpoints({
     endpoints: (builder) => ({
         // ... (Dashboard)
         getDashboardStats: builder.query({
@@ -244,3 +240,4 @@ export const {
     useApproveTestimonialMutation,
     useDeleteTestimonialMutation,
 } = adminApi;
+

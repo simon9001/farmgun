@@ -1,10 +1,6 @@
-import { createApi } from '@reduxjs/toolkit/query/react';
-import { baseQueryWithReauth } from './baseQuery';
+import { apiSlice } from './apiSlice';
 
-export const notificationsApi = createApi({
-    reducerPath: 'notificationsApi',
-    baseQuery: baseQueryWithReauth,
-    tagTypes: ['Notifications'],
+export const notificationsApi = apiSlice.injectEndpoints({
     endpoints: (builder) => ({
         // Get user's notifications
         getUserNotifications: builder.query({
@@ -51,3 +47,4 @@ export const {
     useMarkAllAsReadMutation,
     useSendNotificationMutation,
 } = notificationsApi;
+

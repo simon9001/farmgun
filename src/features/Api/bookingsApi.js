@@ -1,10 +1,6 @@
-import { createApi } from '@reduxjs/toolkit/query/react';
-import { baseQueryWithReauth } from './baseQuery';
+import { apiSlice } from './apiSlice';
 
-export const bookingsApi = createApi({
-    reducerPath: 'bookingsApi',
-    baseQuery: baseQueryWithReauth,
-    tagTypes: ['Bookings'],
+export const bookingsApi = apiSlice.injectEndpoints({
     endpoints: (builder) => ({
         createBooking: builder.mutation({
             query: (bookingData) => ({
@@ -32,4 +28,5 @@ export const {
     useGetMyBookingsQuery,
     useGetSlotsQuery
 } = bookingsApi;
+
 
