@@ -150,7 +150,7 @@ const SideNav = memo(({ open, onClose }) => {
         initial={false}
         animate={open ? "open" : "closed"}
         variants={navVariants}
-        className="side-nav-panel fixed top-0 right-0 w-[85vw] max-w-[300px] h-screen bg-white dark:bg-gray-900 shadow-2xl z-50 flex flex-col p-6 pt-8 border-l border-green-100 dark:border-green-900 overflow-y-auto"
+        className="side-nav-panel fixed top-0 right-0 w-[85vw] max-w-[300px] h-[100dvh] bg-white dark:bg-gray-900 shadow-2xl z-50 flex flex-col p-6 pt-8 pb-20 border-l border-green-100 dark:border-green-900 overflow-y-auto"
         aria-label="Main Navigation"
       >
         {/* Close Button */}
