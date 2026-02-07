@@ -12,12 +12,29 @@ import {
 import FloatingTips from '../components/FloatingTips';
 import About from '../components/About';
 
+import img002 from '../assets/002.jpeg';
+import img003 from '../assets/0003.jpeg';
+import img004 from '../assets/004.jpeg';
+import img005 from '../assets/005.jpeg';
+import img008 from '../assets/008.jpeg';
+import img006 from '../assets/006.jpeg';
+import img007 from '../assets/007.jpeg';
+import img009 from '../assets/009.jpeg';
+import img010 from '../assets/010.jpeg';
+
+
 const HERO_IMAGES = [
-    "https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
-    "https://images.unsplash.com/photo-1625246333195-098e4d975613?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
-    "https://images.unsplash.com/photo-1595841696677-6489b3f8aed1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
-    "https://images.unsplash.com/photo-1574943320219-55edeb70538d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80"
-];
+    img002,
+    img003,
+    img004,
+    img005,
+    img006,
+    img007,
+    img008,
+    img009,
+    img010
+  ];
+  
 
 const Home = () => {
     // Fetch featured data

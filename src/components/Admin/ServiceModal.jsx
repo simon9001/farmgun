@@ -82,10 +82,11 @@ const ServiceModal = ({ isOpen, onClose, serviceToEdit }) => {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl"
+                className="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-2xl border border-gray-100 dark:border-gray-700 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
             >
-                <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+                    <h2 className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
+                        <Sprout className="w-6 h-6 text-green-600" />
                         {serviceToEdit ? 'Edit Service' : 'Add New Service'}
                     </h2>
                     <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
@@ -93,7 +94,7 @@ const ServiceModal = ({ isOpen, onClose, serviceToEdit }) => {
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-6 overflow-y-auto">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-gray-500 uppercase">Service Name</label>
@@ -146,7 +147,7 @@ const ServiceModal = ({ isOpen, onClose, serviceToEdit }) => {
 
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-gray-500 uppercase">Linked Crops</label>
-                        <div className="flex flex-wrap gap-2 pt-1 text-gray-900 dark:text-white">
+                        <div className="flex flex-wrap gap-2 pt-1">
                             {cropsData?.crops?.map(crop => (
                                 <button
                                     key={crop.id}
@@ -154,7 +155,7 @@ const ServiceModal = ({ isOpen, onClose, serviceToEdit }) => {
                                     onClick={() => toggleCrop(crop.id)}
                                     className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${form.crops.includes(crop.id)
                                         ? 'bg-green-600 border-green-600 text-white'
-                                        : 'border-gray-200 dark:border-gray-700 hover:border-green-600'
+                                        : 'border-gray-200 dark:border-gray-700 dark:text-gray-300 hover:border-green-600'
                                         }`}
                                 >
                                     <Sprout className="w-3 h-3" />
@@ -171,11 +172,18 @@ const ServiceModal = ({ isOpen, onClose, serviceToEdit }) => {
                         </div>
                     )}
 
-                    <div className="pt-4 flex gap-4">
+                    <div className="pt-4 flex flex-col md:flex-row gap-4">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold py-4 rounded-2xl hover:bg-gray-200 transition-all"
+                        >
+                            Cancel
+                        </button>
                         <button
                             type="submit"
                             disabled={isCreating || isUpdating}
-                            className="flex-1 bg-green-600 text-white font-bold py-4 rounded-2xl hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                            className="flex-[2] bg-green-600 text-white font-bold py-4 rounded-2xl hover:bg-green-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-green-100 dark:shadow-none"
                         >
                             {(isCreating || isUpdating) ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
                             {serviceToEdit ? 'Save Changes' : 'Create Service'}
@@ -183,6 +191,7 @@ const ServiceModal = ({ isOpen, onClose, serviceToEdit }) => {
                     </div>
                 </form>
             </motion.div>
+
         </div>
     );
 };

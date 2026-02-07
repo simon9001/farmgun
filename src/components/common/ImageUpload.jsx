@@ -36,8 +36,13 @@ const ImageUpload = ({ onUploadComplete, initialMediaId, label = "Featured Media
                 onUploadComplete(result.media.id);
             }
         } catch (err) {
-            console.error("Upload failed:", err);
-            setError("Failed to upload file. Please try again.");
+            console.error("Upload failed details:", {
+                status: err.status,
+                data: err.data,
+                message: err.message
+            });
+            const errorMessage = err.data?.error || err.data?.message || "Failed to upload file. Please try again.";
+            setError(errorMessage);
         }
     };
 
