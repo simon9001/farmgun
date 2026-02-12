@@ -51,11 +51,35 @@ function ContactComponent() {
     e.preventDefault();
     setFormState({ status: "loading", message: "Sending..." });
 
-    // Simulate send or implement actual logic if backend endpoint exists
-    setTimeout(() => {
-      setFormState({ status: "success", message: "Message sent!" });
-      e.target.reset();
-    }, 1500);
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData.entries());
+
+    try {
+      const response = await fetch("https://formspree.io/f/xjgeywbg", {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        setFormState({ status: "success", message: "Message sent! We'll get back to you soon." });
+        e.target.reset();
+      } else {
+        const errorData = await response.json();
+        setFormState({
+          status: "error",
+          message: errorData.error || "Failed to send message. Please try again."
+        });
+      }
+    } catch (error) {
+      setFormState({
+        status: "error",
+        message: "An error occurred. Please check your connection."
+      });
+    }
   };
 
   return (

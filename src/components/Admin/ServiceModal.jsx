@@ -6,6 +6,7 @@ import {
     useUpdateServiceMutation
 } from '../../features/Api/adminApi';
 import { useGetPublicCropsQuery } from '../../features/Api/publicApi';
+import ImageUpload from '../common/ImageUpload';
 
 const ServiceModal = ({ isOpen, onClose, serviceToEdit }) => {
     const [createService, { isLoading: isCreating }] = useCreateServiceMutation();
@@ -16,7 +17,8 @@ const ServiceModal = ({ isOpen, onClose, serviceToEdit }) => {
         name: '',
         description: '',
         price: '',
-        duration: 30,
+        duration_mins: 30,
+        featured_media_id: '',
         crops: [] // Array of crop IDs
     });
 
@@ -28,7 +30,8 @@ const ServiceModal = ({ isOpen, onClose, serviceToEdit }) => {
                 name: serviceToEdit.name,
                 description: serviceToEdit.description,
                 price: serviceToEdit.price,
-                duration: serviceToEdit.duration,
+                duration_mins: serviceToEdit.duration_mins || serviceToEdit.duration || 30,
+                featured_media_id: serviceToEdit.featured_media_id || '',
                 crops: serviceToEdit.service_crops?.map(c => c.id) || []
             });
         }
@@ -42,7 +45,7 @@ const ServiceModal = ({ isOpen, onClose, serviceToEdit }) => {
             const payload = {
                 ...form,
                 price: parseFloat(form.price),
-                duration_mins: parseInt(form.duration)
+                duration_mins: parseInt(form.duration_mins)
             };
             // Remove duration if it conflicts differently or map it correctly. 
             // The schema expects duration_mins, but form has duration. 
@@ -121,8 +124,8 @@ const ServiceModal = ({ isOpen, onClose, serviceToEdit }) => {
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-gray-500 uppercase">Duration (Minutes)</label>
                             <select
-                                value={form.duration}
-                                onChange={e => setForm({ ...form, duration: parseInt(e.target.value) })}
+                                value={form.duration_mins}
+                                onChange={e => setForm({ ...form, duration_mins: parseInt(e.target.value) })}
                                 className="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-xl p-3 focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
                                 required
                             >

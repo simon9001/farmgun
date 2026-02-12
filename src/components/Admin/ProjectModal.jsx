@@ -3,18 +3,20 @@ import { motion } from 'framer-motion';
 import { X, Briefcase, Loader2, Check, AlertCircle, Save } from 'lucide-react';
 import { useCreateProjectMutation, useUpdateProjectMutation } from '../../features/Api/adminApi';
 import ImageUpload from '../common/ImageUpload';
+import MultiImageUpload from '../common/MultiImageUpload';
 
 const ProjectModal = ({ isOpen, onClose, projectToEdit }) => {
     const [createProject, { isLoading: isCreating }] = useCreateProjectMutation();
     const [updateProject, { isLoading: isUpdating }] = useUpdateProjectMutation();
 
     const [form, setForm] = useState({
-        title: '',
+        name: '',
         description: '',
         status: 'ongoing',
         start_date: '',
         end_date: '',
-        featured_media_id: ''
+        featured_media_id: '',
+        media_ids: []
     });
 
     const [status, setStatus] = useState(null);
@@ -22,24 +24,41 @@ const ProjectModal = ({ isOpen, onClose, projectToEdit }) => {
     useEffect(() => {
         if (projectToEdit) {
             setForm({
-                title: projectToEdit.title,
+                name: projectToEdit.name || projectToEdit.title || '',
                 description: projectToEdit.description || '',
                 status: projectToEdit.status || 'ongoing',
                 start_date: projectToEdit.start_date || '',
                 end_date: projectToEdit.end_date || '',
-                featured_media_id: projectToEdit.featured_media_id || ''
+                featured_media_id: projectToEdit.featured_media_id || '',
+                media_ids: projectToEdit.project_media?.map(m => m.media?.id) || []
+            });
+        } else {
+            setForm({
+                name: '',
+                description: '',
+                status: 'ongoing',
+                start_date: '',
+                end_date: '',
+                featured_media_id: '',
+                media_ids: []
             });
         }
-    }, [projectToEdit]);
+    }, [projectToEdit, isOpen]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            // Clean data: remove empty UUID strings and dates
+            const dataToSubmit = { ...form };
+            if (!dataToSubmit.featured_media_id) delete dataToSubmit.featured_media_id;
+            if (!dataToSubmit.start_date) delete dataToSubmit.start_date;
+            if (!dataToSubmit.end_date) delete dataToSubmit.end_date;
+
             if (projectToEdit) {
-                await updateProject({ id: projectToEdit.id, ...form }).unwrap();
+                await updateProject({ id: projectToEdit.id, ...dataToSubmit }).unwrap();
                 setStatus({ success: true, message: 'Project updated!' });
             } else {
-                await createProject(form).unwrap();
+                await createProject(dataToSubmit).unwrap();
                 setStatus({ success: true, message: 'Project created!' });
             }
             setTimeout(() => {
@@ -51,7 +70,21 @@ const ProjectModal = ({ isOpen, onClose, projectToEdit }) => {
         }
     };
 
+    const handleFeatureImageUpload = React.useCallback((mediaId) => {
+        setForm(prev => ({ ...prev, featured_media_id: mediaId }));
+    }, []);
+
+    const handleGalleryUpload = React.useCallback((mediaIds) => {
+        setForm(prev => ({ ...prev, media_ids: mediaIds }));
+    }, []);
+
     if (!isOpen) return null;
+
+    const initialGallery = projectToEdit?.project_media?.map(pm => ({
+        id: pm.media?.id,
+        url: pm.media?.url,
+        type: pm.media?.type
+    })) || [];
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -75,8 +108,8 @@ const ProjectModal = ({ isOpen, onClose, projectToEdit }) => {
                         <label className="text-xs font-bold text-gray-500 uppercase">Project Title</label>
                         <input
                             type="text"
-                            value={form.title}
-                            onChange={e => setForm({ ...form, title: e.target.value })}
+                            value={form.name}
+                            onChange={e => setForm({ ...form, name: e.target.value })}
                             className="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-xl p-4 font-bold focus:ring-2 focus:ring-indigo-500 text-gray-900 dark:text-white"
                             placeholder="e.g. Sustainable Irrigation Initiative"
                             required
@@ -94,13 +127,20 @@ const ProjectModal = ({ isOpen, onClose, projectToEdit }) => {
                         />
                     </div>
 
-                    <ImageUpload
-                        label="Project Feature Image"
-                        initialMediaId={form.featured_media_id}
-                        onUploadComplete={(mediaId) => setForm(prev => ({ ...prev, featured_media_id: mediaId }))}
-                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <ImageUpload
+                            label="Project Feature Image"
+                            initialMediaId={form.featured_media_id}
+                            onUploadComplete={handleFeatureImageUpload}
+                        />
+                        <MultiImageUpload
+                            label="Project Gallery"
+                            initialMedia={initialGallery}
+                            onUploadComplete={handleGalleryUpload}
+                        />
+                    </div>
 
-                    <div className="grid grid-cols-2 gap-6">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                         <div className="space-y-1">
                             <label className="text-xs font-bold text-gray-500 uppercase">Status</label>
                             <select
@@ -119,6 +159,15 @@ const ProjectModal = ({ isOpen, onClose, projectToEdit }) => {
                                 type="date"
                                 value={form.start_date}
                                 onChange={e => setForm({ ...form, start_date: e.target.value })}
+                                className="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-xl p-3 text-sm text-gray-900 dark:text-white"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-bold text-gray-500 uppercase">End Date</label>
+                            <input
+                                type="date"
+                                value={form.end_date}
+                                onChange={e => setForm({ ...form, end_date: e.target.value })}
                                 className="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-xl p-3 text-sm text-gray-900 dark:text-white"
                             />
                         </div>

@@ -1,11 +1,15 @@
 import React from 'react';
 import { useGetPublicServicesQuery } from '../features/Api/publicApi';
-import { motion } from 'framer-motion';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Loader2, AlertCircle, ArrowRight, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import ImageCarousel from '../components/common/ImageCarousel';
+import ProjectCropDetailModal from '../components/common/ProjectCropDetailModal';
 
 const Services = () => {
     const { data, isLoading, error } = useGetPublicServicesQuery({});
+    const [selectedService, setSelectedService] = useState(null);
+    const [isDetailOpen, setIsDetailOpen] = useState(false);
 
     if (isLoading) {
         return (
@@ -51,18 +55,26 @@ const Services = () => {
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: index * 0.1 }}
-                            className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-shadow"
+                            className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-shadow group h-full flex flex-col cursor-pointer"
+                            onClick={() => {
+                                setSelectedService(service);
+                                setIsDetailOpen(true);
+                            }}
                         >
-                            <div className="h-48 bg-green-100 dark:bg-green-900/30 flex items-center justify-center overflow-hidden">
-                                {service.featured_media?.optimized_url ? (
-                                    <img
-                                        src={service.featured_media.optimized_url}
-                                        alt={service.name}
-                                        className="w-full h-full object-cover"
-                                    />
-                                ) : (
-                                    <span className="text-green-600 font-medium">No Image</span>
-                                )}
+                            <div className="h-48 relative overflow-hidden">
+                                <ImageCarousel
+                                    images={[
+                                        service.featured_media?.optimized_url || service.featured_media?.url,
+                                        ...(service.service_crops?.flatMap(sc => [
+                                            sc.featured_media?.optimized_url || sc.featured_media?.url
+                                        ]) || [])
+                                    ].filter(Boolean)}
+                                />
+                                <div className="absolute top-3 right-3">
+                                    <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm p-1.5 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <ArrowRight className="w-4 h-4 text-green-600" />
+                                    </div>
+                                </div>
                             </div>
                             <div className="p-6">
                                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
@@ -87,6 +99,18 @@ const Services = () => {
                     ))}
                 </div>
             )}
+
+            {/* Detail Modal */}
+            <AnimatePresence>
+                {isDetailOpen && (
+                    <ProjectCropDetailModal
+                        isOpen={isDetailOpen}
+                        onClose={() => setIsDetailOpen(false)}
+                        data={selectedService}
+                        type="service"
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 };

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { X, Sprout, Loader2, Check, AlertCircle } from 'lucide-react';
 import { useCreateCropMutation, useUpdateCropMutation } from '../../features/Api/adminApi';
 import ImageUpload from '../common/ImageUpload';
+import MultiImageUpload from '../common/MultiImageUpload';
 
 const CropModal = ({ isOpen, onClose, cropToEdit }) => {
     const [createCrop, { isLoading: isCreating }] = useCreateCropMutation();
@@ -14,7 +15,8 @@ const CropModal = ({ isOpen, onClose, cropToEdit }) => {
         category: 'vegetable',
         growing_season: '',
         description: '',
-        featured_media_id: ''
+        featured_media_id: '',
+        media_ids: []
     });
 
     const [status, setStatus] = useState(null);
@@ -27,19 +29,24 @@ const CropModal = ({ isOpen, onClose, cropToEdit }) => {
                 category: cropToEdit.category || 'vegetable',
                 growing_season: cropToEdit.growing_season || '',
                 description: cropToEdit.description || '',
-                featured_media_id: cropToEdit.featured_media_id || ''
+                featured_media_id: cropToEdit.featured_media_id || '',
+                media_ids: cropToEdit.crop_media?.map(m => m.media?.id) || []
             });
         }
-    }, [cropToEdit]);
+    }, [cropToEdit, isOpen]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            // Clean data: remove empty UUID strings
+            const dataToSubmit = { ...form };
+            if (!dataToSubmit.featured_media_id) delete dataToSubmit.featured_media_id;
+
             if (cropToEdit) {
-                await updateCrop({ id: cropToEdit.id, ...form }).unwrap();
+                await updateCrop({ id: cropToEdit.id, ...dataToSubmit }).unwrap();
                 setStatus({ success: true, message: 'Crop updated!' });
             } else {
-                await createCrop(form).unwrap();
+                await createCrop(dataToSubmit).unwrap();
                 setStatus({ success: true, message: 'Crop created!' });
             }
             setTimeout(() => {
@@ -51,7 +58,21 @@ const CropModal = ({ isOpen, onClose, cropToEdit }) => {
         }
     };
 
+    const handleFeatureImageUpload = React.useCallback((mediaId) => {
+        setForm(prev => ({ ...prev, featured_media_id: mediaId }));
+    }, []);
+
+    const handleGalleryUpload = React.useCallback((mediaIds) => {
+        setForm(prev => ({ ...prev, media_ids: mediaIds }));
+    }, []);
+
     if (!isOpen) return null;
+
+    const initialGallery = cropToEdit?.crop_media?.map(cm => ({
+        id: cm.media?.id,
+        url: cm.media?.url,
+        type: cm.media?.type
+    })) || [];
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -130,11 +151,18 @@ const CropModal = ({ isOpen, onClose, cropToEdit }) => {
                         />
                     </div>
 
-                    <ImageUpload
-                        label="Crop Feature Image"
-                        initialMediaId={form.featured_media_id}
-                        onUploadComplete={(mediaId) => setForm(prev => ({ ...prev, featured_media_id: mediaId }))}
-                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <ImageUpload
+                            label="Feature Image"
+                            initialMediaId={form.featured_media_id}
+                            onUploadComplete={handleFeatureImageUpload}
+                        />
+                        <MultiImageUpload
+                            label="Gallery Images"
+                            initialMedia={initialGallery}
+                            onUploadComplete={handleGalleryUpload}
+                        />
+                    </div>
 
                     {status && (
                         <div className={`p-4 rounded-xl flex items-center gap-3 ${status.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>

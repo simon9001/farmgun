@@ -671,7 +671,7 @@ const ServicesTab = () => {
                                         <p className="text-xs text-gray-500 line-clamp-1">{s.description}</p>
                                     </td>
                                     <td className="px-6 py-4 font-bold text-green-600">KES {s.price}</td>
-                                    <td className="px-6 py-4">{s.duration} mins</td>
+                                    <td className="px-6 py-4">{s.duration_mins || s.duration} mins</td>
                                     <td className="px-6 py-4">
                                         <div className="flex -space-x-2">
                                             {s.service_crops?.slice(0, 3).map((c, i) => (

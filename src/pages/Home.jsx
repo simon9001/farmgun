@@ -11,6 +11,8 @@ import {
 } from '../features/Api/publicApi';
 import FloatingTips from '../components/FloatingTips';
 import About from '../components/About';
+import ImageCarousel from '../components/common/ImageCarousel';
+import ProjectCropDetailModal from '../components/common/ProjectCropDetailModal';
 
 import img002 from '../assets/002.jpeg';
 import img003 from '../assets/0003.jpeg';
@@ -33,8 +35,8 @@ const HERO_IMAGES = [
     img008,
     img009,
     img010
-  ];
-  
+];
+
 
 const Home = () => {
     // Fetch featured data
@@ -42,6 +44,10 @@ const Home = () => {
     const { data: projectsData, isLoading: projectsLoading } = useGetPublicProjectsQuery({ featured: true, limit: 3 });
     const { data: testimonialsData, isLoading: testimonialsLoading } = useGetPublicTestimonialsQuery({ featured: true, limit: 3 });
     const { data: servicesData, isLoading: servicesLoading } = useGetPublicServicesQuery({ featured: true, limit: 3 });
+
+    const [selectedItem, setSelectedItem] = useState(null);
+    const [detailType, setDetailType] = useState('project');
+    const [isDetailOpen, setIsDetailOpen] = useState(false);
 
     const { data: tipsData } = useGetPublicTipsQuery({ limit: 5 });
     const [forceShowTips, setForceShowTips] = useState(false);
@@ -192,9 +198,9 @@ const Home = () => {
                                     className="group bg-white dark:bg-gray-900 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300"
                                 >
                                     <div className="h-48 overflow-hidden">
-                                        {service.featured_media?.optimized_url ? (
+                                        {(service.featured_media?.optimized_url || service.featured_media?.url) ? (
                                             <img
-                                                src={service.featured_media.optimized_url}
+                                                src={service.featured_media.optimized_url || service.featured_media.url}
                                                 alt={service.name}
                                                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                             />
@@ -256,30 +262,28 @@ const Home = () => {
                                     whileInView={{ opacity: 1, y: 0 }}
                                     viewport={{ once: true }}
                                     transition={{ delay: index * 0.1 }}
-                                    className="group bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300"
+                                    className="group bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer"
+                                    onClick={() => {
+                                        setSelectedItem(crop);
+                                        setDetailType('crop');
+                                        setIsDetailOpen(true);
+                                    }}
                                 >
                                     <div className="h-48 overflow-hidden">
-                                        {crop.featured_media?.optimized_url ? (
-                                            <img
-                                                src={crop.featured_media.optimized_url}
-                                                alt={crop.name}
-                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-400">
-                                                No Image
-                                            </div>
-                                        )}
+                                        <ImageCarousel
+                                            images={[
+                                                crop.featured_media?.optimized_url || crop.featured_media?.url,
+                                                ...(crop.crop_media?.map(cm => cm.media?.optimized_url || cm.media?.url) || [])
+                                            ].filter(Boolean)}
+                                            className="transition-transform duration-500 group-hover:scale-110"
+                                        />
                                     </div>
                                     <div className="p-6">
                                         <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{crop.name}</h3>
                                         <p className="text-gray-600 dark:text-gray-400 line-clamp-2 mb-4">{crop.description}</p>
-                                        <Link
-                                            to={`/booking?serviceId=${crop.id}`}
-                                            className="inline-flex items-center text-green-600 font-semibold hover:text-green-700"
-                                        >
-                                            Book Consultation <ArrowRight className="w-4 h-4 ml-1" />
-                                        </Link>
+                                        <div className="inline-flex items-center text-green-600 font-semibold hover:text-green-700">
+                                            View Details <ArrowRight className="w-4 h-4 ml-1" />
+                                        </div>
                                     </div>
                                 </motion.div>
                             ))}
@@ -315,21 +319,21 @@ const Home = () => {
                                     whileInView={{ opacity: 1, scale: 1 }}
                                     viewport={{ once: true }}
                                     transition={{ delay: index * 0.1 }}
-                                    className="bg-white dark:bg-gray-900 rounded-xl overflow-hidden shadow-lg"
+                                    className="bg-white dark:bg-gray-900 rounded-xl overflow-hidden shadow-lg cursor-pointer group"
+                                    onClick={() => {
+                                        setSelectedItem(project);
+                                        setDetailType('project');
+                                        setIsDetailOpen(true);
+                                    }}
                                 >
                                     <div className="h-64 relative">
-                                        {project.featured_media?.optimized_url ? (
-                                            <img
-                                                src={project.featured_media.optimized_url}
-                                                alt={project.name}
-                                                className="w-full h-full object-cover"
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-400">
-                                                No Image
-                                            </div>
-                                        )}
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-6">
+                                        <ImageCarousel
+                                            images={[
+                                                project.featured_media?.optimized_url || project.featured_media?.url,
+                                                ...(project.project_media?.map(pm => pm.media?.optimized_url || pm.media?.url) || [])
+                                            ].filter(Boolean)}
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-6 pointer-events-none">
                                             <h3 className="text-xl font-bold text-white mb-1">{project.name}</h3>
                                             <p className="text-gray-300 text-sm line-clamp-1">{project.description}</p>
                                         </div>
@@ -428,6 +432,18 @@ const Home = () => {
                     </Link>
                 </div>
             </section>
+
+            {/* Detail Modal */}
+            <AnimatePresence>
+                {isDetailOpen && (
+                    <ProjectCropDetailModal
+                        isOpen={isDetailOpen}
+                        onClose={() => setIsDetailOpen(false)}
+                        data={selectedItem}
+                        type={detailType}
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 };
