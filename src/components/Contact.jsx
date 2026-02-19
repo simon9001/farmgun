@@ -142,7 +142,7 @@ function ContactComponent() {
           </p>
           <div className="flex items-center gap-6">
             <a
-              href="https://facebook.com"
+              href="https://www.facebook.com/share/1aNUzPY1yX"
               target="_blank"
               rel="noopener noreferrer"
               className="p-3 rounded-full bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-1"
@@ -160,7 +160,7 @@ function ContactComponent() {
               <Instagram className="w-6 h-6" />
             </a>
             <a
-              href="https://tiktok.com"
+              href="tiktok.com/@farm_with_irene"
               target="_blank"
               rel="noopener noreferrer"
               className="p-3 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-1"
@@ -179,7 +179,7 @@ function ContactComponent() {
               </svg>
             </a>
             <a
-              href="https://youtube.com"
+              href="https://www.youtube.com/@FarmWithIrene"
               target="_blank"
               rel="noopener noreferrer"
               className="p-3 rounded-full bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white dark:hover:bg-red-600 transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-1"
