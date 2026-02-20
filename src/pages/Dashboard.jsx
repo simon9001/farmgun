@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { selectCurrentUser } from '../features/Slice/AuthSlice';
 import { useGetMyBookingsQuery } from '../features/Api/bookingsApi';
+import PaymentModal from '../components/PaymentModal';
+
 import {
     useGetUserNotificationsQuery,
     useMarkAsReadMutation,
@@ -28,6 +30,9 @@ import {
 const Dashboard = () => {
     const user = useSelector(selectCurrentUser);
     const [activeTab, setActiveTab] = useState('bookings');
+
+    const [paymentModalData, setPaymentModalData] = useState({ isOpen: false, bookingId: null, phone: '', amount: 0, serviceName: '' });
+
 
     const {
         data: bookingsData,
@@ -62,6 +67,14 @@ const Dashboard = () => {
 
     return (
         <div className="min-h-screen bg-transparent py-8 px-4 sm:px-6 lg:px-8">
+            <PaymentModal
+                {...paymentModalData}
+                onClose={() => {
+                    setPaymentModalData({ ...paymentModalData, isOpen: false });
+                    refetchBookings();
+                }}
+            />
+
             <div className="max-w-6xl mx-auto">
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
@@ -215,10 +228,26 @@ const Dashboard = () => {
                                                     <p className="text-xs text-green-700 dark:text-green-400 font-medium">Link will be shared before the session</p>
                                                 </div>
                                             ) : booking.status === 'pending' ? (
-                                                <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-2xl border border-yellow-100 dark:border-yellow-800 text-center">
-                                                    <p className="text-xs text-yellow-700 dark:text-yellow-400 font-medium">Complete payment to confirm</p>
+                                                <div className="space-y-3">
+                                                    <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-2xl border border-yellow-100 dark:border-yellow-800 text-center">
+                                                        <p className="text-xs text-yellow-700 dark:text-yellow-400 font-medium">Complete payment to confirm</p>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => setPaymentModalData({
+                                                            isOpen: true,
+                                                            bookingId: booking.id,
+                                                            phone: '', // User will enter/confirm in modal
+                                                            amount: booking.service.price,
+                                                            serviceName: booking.service.name
+                                                        })}
+                                                        className="w-full flex items-center justify-center gap-2 py-3 bg-green-600 hover:bg-green-700 text-white rounded-2xl text-sm font-bold shadow-lg shadow-green-200 dark:shadow-green-950 transition-all"
+                                                    >
+                                                        <CreditCard className="w-4 h-4" />
+                                                        Pay Now
+                                                    </button>
                                                 </div>
                                             ) : null}
+
                                         </motion.div>
                                     ))}
                                 </div>

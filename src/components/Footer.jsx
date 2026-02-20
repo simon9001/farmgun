@@ -5,12 +5,12 @@ import { Link } from 'react-router-dom';
 // Social links data
 const socialLinks = [
   {
-    href: "https://www.facebook.com/", // Placeholder
+    href: "https://www.facebook.com/share/1aNUzPY1yX", // Placeholder
     title: "Facebook",
     icon: Facebook,
   },
   {
-    href: "https://www.youtube.com/", // Placeholder
+    href: "https://www.youtube.com/@FarmWithIrene", // Placeholder
     title: "YouTube",
     icon: Youtube,
   },
@@ -54,7 +54,9 @@ const Footer = memo(() => {
           </div>
           <div className="flex gap-4 text-sm font-medium text-gray-600 dark:text-gray-400">
             <Link to="/about" className="hover:text-green-600 transition-colors">About Us</Link>
+            <Link to="/partners" className="hover:text-green-600 transition-colors">Partners</Link>
             <Link to="/contact" className="hover:text-green-600 transition-colors">Contact</Link>
+
             {/* <Link to="/privacy" className="hover:text-green-600 transition-colors">Privacy Policy</Link> */}
           </div>
         </div>

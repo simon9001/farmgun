@@ -10,7 +10,9 @@ import Services from './pages/Services';
 import Bookings from './pages/Bookings';
 import Projects from './pages/Projects';
 import Testimonials from './pages/Testimonials';
+import Partners from './pages/Partners';
 import UserRoute from './components/auth/UserRoute';
+
 import AdminRoute from './components/auth/AdminRoute';
 
 // Import pages
@@ -21,6 +23,11 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import AdminDashboard from "./pages/AdminDashboard";
 import Dashboard from "./pages/Dashboard";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import PaymentCallback from "./pages/PaymentCallback";
+
+
 
 
 // --- NEW AWESOME BACKGROUND ---
@@ -94,6 +101,23 @@ const AnimatedRoutes = memo(() => {
             <Register />
           </motion.div>
         } />
+        <Route path="/forgot-password" element={
+          <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
+            <ForgotPassword />
+          </motion.div>
+        } />
+        <Route path="/reset-password" element={
+          <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
+            <ResetPassword />
+          </motion.div>
+        } />
+        <Route path="/payment-callback" element={
+          <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
+            <PaymentCallback />
+          </motion.div>
+        } />
+
+
 
         {/* Protected Routes */}
         <Route
@@ -117,11 +141,14 @@ const AnimatedRoutes = memo(() => {
         <Route
           path="/booking"
           element={
-            <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
-              <Bookings />
-            </motion.div>
+            <UserRoute>
+              <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
+                <Bookings />
+              </motion.div>
+            </UserRoute>
           }
         />
+
         <Route
           path="/projects"
           element={
@@ -138,6 +165,15 @@ const AnimatedRoutes = memo(() => {
             </motion.div>
           }
         />
+        <Route
+          path="/partners"
+          element={
+            <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
+              <Partners />
+            </motion.div>
+          }
+        />
+
         <Route
           path="/admin"
           element={

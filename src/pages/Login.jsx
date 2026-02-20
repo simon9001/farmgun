@@ -81,7 +81,17 @@ const Login = () => {
                         </div>
                     </div>
 
+                    <div className="flex items-center justify-end">
+                        <Link
+                            to="/forgot-password"
+                            className="text-xs font-semibold text-green-600 hover:text-green-500 transition-colors"
+                        >
+                            Forgot Password?
+                        </Link>
+                    </div>
+
                     {error && (
+
                         <div className="text-red-500 text-center text-sm">
                             {error.data?.error || 'Login failed. Please check your credentials.'}
                         </div>

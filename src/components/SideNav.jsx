@@ -9,8 +9,10 @@ import {
   X,
   Home,
   LogIn,
-  LogOut
+  LogOut,
+  Award
 } from "lucide-react";
+
 import { Link, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from 'react-redux';
 import { selectIsAuthenticated, selectCurrentUser, logout } from '../features/Slice/AuthSlice';
@@ -113,7 +115,9 @@ const SideNav = memo(({ open, onClose }) => {
     const links = [
       { to: "/", icon: Home, text: "Home" },
       { to: "/about", icon: User, text: "About" },
+      { to: "/partners", icon: Award, text: "Partners" },
       { to: "/contact", icon: Mail, text: "Contact" },
+
       ...(isAuthenticated ? [
         ...(user?.role === 'admin'
           ? [{ to: "/admin", icon: ShieldCheck, text: "Admin Panel" }]

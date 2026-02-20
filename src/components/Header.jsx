@@ -34,7 +34,9 @@ const Header = memo(({ toggleTheme, currentTheme, onHamburgerClick }) => {
   const navLinks = useMemo(() => [
     { to: "/", label: "Home" },
     { to: "/about", label: "About" },
+    { to: "/partners", label: "Partners" },
     { to: "/contact", label: "Contact" },
+
     ...(isAuthenticated ? [
       ...(user?.role === 'admin'
         ? [{ to: "/admin", label: "Admin Panel" }]

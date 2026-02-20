@@ -151,7 +151,7 @@ function ContactComponent() {
               <Facebook className="w-6 h-6" />
             </a>
             <a
-              href="https://instagram.com"
+              href="https://www.instagram.com/farmwithirene?igsh=OG55bTZwd3AzZTM2"
               target="_blank"
               rel="noopener noreferrer"
               className="p-3 rounded-full bg-pink-100 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 hover:bg-pink-600 hover:text-white dark:hover:bg-pink-600 transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-1"

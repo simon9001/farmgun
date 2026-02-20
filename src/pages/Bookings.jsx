@@ -7,32 +7,47 @@ import { useGetPublicServicesQuery } from '../features/Api/publicApi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, Clock, Loader2, CheckCircle, AlertCircle, Phone } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useInitiatePaymentMutation } from '../features/Api/paymentsApi';
+import PaymentModal from '../components/PaymentModal';
+
+
 
 const bookingSchema = z.object({
     service_id: z.string().uuid('Please select a service'),
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date is required'),
     start_time: z.string().regex(/^\d{2}:\d{2}$/, 'Please select a time slot'),
+    payment_phone: z.string().regex(/^(?:254|\+254|0)?(7|1)\d{8}$/, 'Invalid phone number'),
     user_notes: z.string().optional(),
-    payment_phone: z.string().regex(/^(?:254|\+254|0)?(7|1)\d{8}$/, 'Enter a valid M-Pesa number (e.g., 0712345678)'),
 });
+
+
 
 const Bookings = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const preSelectedServiceId = searchParams.get('serviceId');
 
-    const [createBooking, { isLoading: isBooking, isSuccess, error: bookingError }] = useCreateBookingMutation();
+    const [createBooking, { isLoading: isBooking, error: bookingError }] = useCreateBookingMutation();
+    const [initiatePayment, { isLoading: isInitiating }] = useInitiatePaymentMutation();
     const { data: servicesData, isLoading: servicesLoading } = useGetPublicServicesQuery({});
 
-    const { register, handleSubmit, watch, setValue, formState: { errors }, reset } = useForm({
+    const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
         resolver: zodResolver(bookingSchema),
         defaultValues: {
             service_id: preSelectedServiceId || '',
             date: '',
             start_time: '',
+            payment_phone: '',
             user_notes: ''
         }
     });
+
+    // Pre-fill service from URL param
+    useEffect(() => {
+        if (preSelectedServiceId) {
+            setValue('service_id', preSelectedServiceId);
+        }
+    }, [preSelectedServiceId, setValue]);
 
     const selectedServiceId = watch('service_id');
     const selectedDate = watch('date');
@@ -46,51 +61,43 @@ const Bookings = () => {
 
     const availableSlots = slotsData?.slots || [];
 
+    const [paymentModalData, setPaymentModalData] = useState({ isOpen: false, bookingId: null, initialPhone: '', amount: 0, serviceName: '' });
+
+
+
     const onSubmit = async (data) => {
         try {
-            await createBooking(data).unwrap();
-            reset();
+            const result = await createBooking(data).unwrap();
+
+            // Open Payment Modal
+            setPaymentModalData({
+                isOpen: true,
+                bookingId: result.booking.id,
+                initialPhone: data.payment_phone,
+                amount: result.booking.service.price,
+                serviceName: result.booking.service.name
+            });
+
+
         } catch (err) {
             console.error('Booking failed:', err);
         }
     };
 
-    if (servicesLoading) {
-        return (
-            <div className="flex justify-center items-center min-h-[50vh]">
-                <Loader2 className="w-8 h-8 animate-spin text-green-600" />
-            </div>
-        );
-    }
 
-    if (isSuccess) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4">
-                <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-4 text-green-600"
-                >
-                    <CheckCircle className="w-10 h-10" />
-                </motion.div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Check Your Phone!</h2>
-                <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md">
-                    An M-Pesa payment request has been sent to your phone.
-                    Please <strong>enter your M-Pesa PIN</strong> to complete the booking.
-                    Your booking will be confirmed automatically once payment is received.
-                </p>
-                <button
-                    onClick={() => navigate('/dashboard')}
-                    className="px-8 py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-all shadow-lg hover:shadow-green-200"
-                >
-                    View Status in Dashboard
-                </button>
-            </div>
-        );
-    }
+
+
 
     return (
         <div className="max-w-4xl mx-auto px-4 py-12">
+            <PaymentModal
+                {...paymentModalData}
+                onClose={() => {
+                    setPaymentModalData({ ...paymentModalData, isOpen: false });
+                    navigate('/dashboard'); // Go to dashboard after closing/finishing
+                }}
+            />
+
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -152,18 +159,18 @@ const Bookings = () => {
                                 )}
                             </div>
 
-                            {/* M-Pesa Phone Number */}
+                            {/* Phone Input */}
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                    3. M-Pesa Phone Number
+                                    3. Your Phone Number
                                 </label>
                                 <div className="relative">
                                     <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                     <input
                                         type="tel"
                                         {...register('payment_phone')}
-                                        placeholder="e.g., 0712345678"
                                         className="w-full pl-12 rounded-xl border-gray-200 border px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-800 dark:border-gray-700 dark:text-white transition-all"
+                                        placeholder="e.g. 0712345678"
                                     />
                                 </div>
                                 {errors.payment_phone && (
@@ -171,8 +178,9 @@ const Bookings = () => {
                                         <AlertCircle className="w-4 h-4" /> {errors.payment_phone.message}
                                     </p>
                                 )}
-                                <p className="text-xs text-gray-500 mt-1">This number will receive the M-Pesa STK Push.</p>
                             </div>
+
+
 
                             {/* Notes */}
                             <div>
@@ -251,14 +259,15 @@ const Bookings = () => {
                                 disabled={isBooking || !selectedTime}
                                 className="w-full bg-green-600 text-white font-bold py-4 rounded-xl hover:bg-green-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-xl hover:shadow-green-100"
                             >
-                                {isBooking ? (
+                                {isBooking || isInitiating ? (
                                     <>
                                         <Loader2 className="w-6 h-6 animate-spin" />
-                                        Confirming Booking...
+                                        Processing...
                                     </>
                                 ) : (
-                                    'Complete Booking'
+                                    'Proceed to Payment'
                                 )}
+
                             </button>
                         </div>
                     </form>

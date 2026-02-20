@@ -131,7 +131,9 @@ export const exportBookingsToCSV = (bookings, filename = `bookings_${new Date().
         service_price: booking.service?.price || 'N/A',
         payment_amount: booking.payments?.[0]?.amount || 'N/A',
         payment_status: booking.payments?.[0]?.status || 'N/A',
-        payment_method: booking.payments?.[0]?.mpesa_receipt_number ? 'M-Pesa' : 'N/A',
+        payment_method: booking.payments?.[0]?.transaction_id ? 'Paystack' : 'N/A',
+        transaction_id: booking.payments?.[0]?.transaction_id || 'N/A',
+
         created_at: booking.created_at,
         updated_at: booking.updated_at,
     }));

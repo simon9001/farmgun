@@ -5,8 +5,9 @@ import {
     AlertCircle, ChevronDown, LayoutDashboard, Calendar,
     Briefcase, Sprout, FileText, Settings, LogOut,
     MessageSquare, Search, Plus, Filter, MoreVertical,
-    Download, ExternalLink, Trash2, Edit3
+    Download, ExternalLink, Trash2, Edit3, Award, Star
 } from 'lucide-react';
+
 import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '../features/Slice/AuthSlice';
 import ServiceModal from '../components/Admin/ServiceModal';
@@ -14,7 +15,9 @@ import CropModal from '../components/Admin/CropModal';
 import PostModal from '../components/Admin/PostModal';
 import ProjectModal from '../components/Admin/ProjectModal';
 import BookingModal from '../components/Admin/BookingModal';
+import PartnerModal from '../components/Admin/PartnerModal';
 import {
+
     useGetDashboardStatsQuery,
     useGetAllUsersQuery,
     useGetAllBookingsQuery,
@@ -30,7 +33,12 @@ import {
     useApproveTestimonialMutation,
     useDeleteTestimonialMutation,
 } from '../features/Api/adminApi';
+import {
+    useAdminGetAllPartnersQuery,
+    useDeletePartnerMutation,
+} from '../features/Api/partnersApi';
 import { useSendNotificationMutation } from '../features/Api/notificationsApi';
+
 import { useGetServicesQuery } from '../features/Api/servicesApi';
 import {
     useGetPublicCropsQuery,
@@ -64,8 +72,10 @@ const AdminDashboard = () => {
         { id: 'crops', name: 'Crops Database', icon: Sprout },
         { id: 'blog', name: 'Blog & Tips', icon: FileText },
         { id: 'projects', name: 'Our Projects', icon: Briefcase },
+        { id: 'partners', name: 'Partners', icon: Award },
         { id: 'testimonials', name: 'Testimonials', icon: MessageSquare },
         { id: 'settings', name: 'System Settings', icon: Settings },
+
     ];
 
     const renderTabContent = () => {
@@ -77,8 +87,10 @@ const AdminDashboard = () => {
             case 'crops': return <CropsTab />;
             case 'blog': return <BlogTab />;
             case 'projects': return <ProjectsTab />;
+            case 'partners': return <PartnersTab />;
             case 'testimonials': return <TestimonialsTab />;
             case 'settings': return <SettingsTab />;
+
             default: return <OverviewTab stats={statsData?.stats} loading={statsLoading} />;
         }
     };
@@ -1199,6 +1211,157 @@ const TestimonialsTab = () => {
                     </div>
                 ))}
             </div>
+        </div>
+    );
+};
+
+const PartnersTab = () => {
+    const { data: partnersData, isLoading } = useAdminGetAllPartnersQuery();
+    const [deletePartner] = useDeletePartnerMutation();
+    const partners = partnersData?.partners || [];
+
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingPartner, setEditingPartner] = useState(null);
+
+    const handleEdit = (partner) => {
+        setEditingPartner(partner);
+        setIsModalOpen(true);
+    };
+
+    const handleDelete = async (id) => {
+        if (window.confirm('Are you sure you want to delete this partner?')) {
+            try {
+                await deletePartner(id).unwrap();
+            } catch (err) {
+                alert('Failed to delete partner: ' + (err.data?.error || 'Unknown error'));
+            }
+        }
+    };
+
+    const handleOpenCreate = () => {
+        setEditingPartner(null);
+        setIsModalOpen(true);
+    };
+
+    return (
+        <div className="space-y-6">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden text-sm">
+                <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+                    <div>
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Partners Directory</h3>
+                        <p className="text-xs text-gray-500">Manage your strategic alliances and partner companies</p>
+                    </div>
+                    <button
+                        onClick={handleOpenCreate}
+                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition-colors shadow-lg shadow-green-100 dark:shadow-none"
+                    >
+                        <Plus className="w-4 h-4" /> Add New Partner
+                    </button>
+                </div>
+
+                {isLoading ? (
+                    <div className="p-12 flex justify-center">
+                        <Loader2 className="w-8 h-8 animate-spin text-green-600" />
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead className="bg-gray-50/50 dark:bg-gray-900/50 text-gray-500 uppercase text-xs">
+                                <tr>
+                                    <th className="px-6 py-4">Partner</th>
+                                    <th className="px-6 py-4">Category</th>
+                                    <th className="px-6 py-4">Status</th>
+                                    <th className="px-6 py-4">Featured</th>
+                                    <th className="px-6 py-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                                {partners.map((p) => {
+                                    let hostname = '';
+                                    try {
+                                        hostname = p.website_url ? new URL(p.website_url).hostname : '';
+                                    } catch (e) {
+                                        hostname = p.website_url;
+                                    }
+
+                                    return (
+                                        <tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 flex items-center justify-center overflow-hidden">
+                                                        {p.logo?.url ? (
+                                                            <img src={p.logo.url} alt={p.name} className="w-full h-full object-contain p-1" />
+                                                        ) : (
+                                                            <Award className="w-5 h-5 text-gray-400" />
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-gray-900 dark:text-white">{p.name}</p>
+                                                        {p.website_url && (
+                                                            <a href={p.website_url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-green-600 flex items-center gap-1 hover:underline">
+                                                                <ExternalLink className="w-3 h-3" /> {hostname}
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className="px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs font-semibold">
+                                                    {p.category}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-2">
+                                                    <div className={`w-2 h-2 rounded-full ${p.is_active ? 'bg-green-500' : 'bg-gray-300'}`} />
+                                                    <span className={`text-xs font-medium ${p.is_active ? 'text-green-700' : 'text-gray-400'}`}>
+                                                        {p.is_active ? 'Active' : 'Inactive'}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                {p.is_featured ? (
+                                                    <span className="flex items-center gap-1 text-xs font-bold text-yellow-600 bg-yellow-50 px-2 py-1 rounded-md">
+                                                        <Star className="w-3 h-3 fill-current" /> Featured
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-xs text-gray-400">Regular</span>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="flex justify-end gap-2">
+                                                    <button
+                                                        onClick={() => handleEdit(p)}
+                                                        className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                                                        title="Edit"
+                                                    >
+                                                        <Edit3 className="w-5 h-5" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(p.id)}
+                                                        className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                                        title="Delete"
+                                                    >
+                                                        <Trash2 className="w-5 h-5" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
+
+            <PartnerModal
+                isOpen={isModalOpen}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setEditingPartner(null);
+                }}
+                partnerToEdit={editingPartner}
+            />
         </div>
     );
 };
