@@ -62,6 +62,11 @@ const ProjectCropDetailModal = ({ isOpen, onClose, data, type }) => {
                         <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white leading-tight">
                             {data.name}
                         </h2>
+                        {data.tagline && (
+                            <p className="text-green-600 dark:text-green-400 font-bold mt-2 text-lg italic">
+                                "{data.tagline}"
+                            </p>
+                        )}
                     </div>
 
                     <div className="space-y-6 flex-grow">
@@ -95,6 +100,45 @@ const ProjectCropDetailModal = ({ isOpen, onClose, data, type }) => {
                                 {data.description || "No description available."}
                             </p>
                         </div>
+
+                        {type === 'service' && data.what_get && data.what_get.length > 0 && (
+                            <div>
+                                <h4 className="flex items-center gap-2 text-gray-900 dark:text-white font-bold mb-3">
+                                    <Check className="w-4 h-4 text-green-500" />
+                                    What You Get
+                                </h4>
+                                <ul className="space-y-2">
+                                    {data.what_get.map((item, i) => (
+                                        <li key={i} className="flex gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                            <span className="text-green-500 mt-0.5">✔</span>
+                                            {item}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
+                        {type === 'service' && data.pricing_options && data.pricing_options.length > 0 && (
+                            <div>
+                                <h4 className="flex items-center gap-2 text-gray-900 dark:text-white font-bold mb-3">
+                                    <Tag className="w-4 h-4 text-green-500" />
+                                    Investment / Pricing
+                                </h4>
+                                <div className="space-y-2">
+                                    {data.pricing_options.map((opt, i) => (
+                                        <div key={i} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
+                                            <div>
+                                                <span className="text-sm font-bold text-gray-900 dark:text-white">{opt.label}</span>
+                                                {opt.note && <p className="text-[10px] text-gray-500 italic">{opt.note}</p>}
+                                            </div>
+                                            <span className="text-sm font-bold text-green-600">
+                                                {opt.is_custom ? 'Custom Quote' : `KES ${opt.price}`}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         {type === 'crop' && data.service_crops && data.service_crops.length > 0 && (
                             <div>
