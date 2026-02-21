@@ -11,6 +11,7 @@ import Bookings from './pages/Bookings';
 import Projects from './pages/Projects';
 import Testimonials from './pages/Testimonials';
 import Partners from './pages/Partners';
+import Crops from './pages/Crops';
 import UserRoute from './components/auth/UserRoute';
 
 import AdminRoute from './components/auth/AdminRoute';
@@ -135,6 +136,14 @@ const AnimatedRoutes = memo(() => {
           element={
             <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
               <Services />
+            </motion.div>
+          }
+        />
+        <Route
+          path="/crops"
+          element={
+            <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
+              <Crops />
             </motion.div>
           }
         />

@@ -242,7 +242,7 @@ const Home = () => {
             <section className="py-20 bg-white dark:bg-gray-900">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-16">
-                        <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Our Expertise</h2>
+                        <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Crops I Deal With</h2>
                         <div className="w-20 h-1 bg-green-500 mx-auto rounded-full mb-4"></div>
                         <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
                             Specializing in high-value crops and modern farming techniques to maximize your yield.
@@ -291,8 +291,8 @@ const Home = () => {
                     )}
 
                     <div className="text-center mt-12">
-                        <Link to="/services" className="inline-block border border-green-600 text-green-600 hover:bg-green-50 px-6 py-2 rounded-lg font-medium transition-colors">
-                            View All Crops & Services
+                        <Link to="/crops" className="inline-block border border-green-600 text-green-600 hover:bg-green-50 px-6 py-2 rounded-lg font-medium transition-colors">
+                            View More Crops
                         </Link>
                     </div>
                 </div>
