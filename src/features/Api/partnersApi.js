@@ -37,6 +37,13 @@ export const partnersApi = apiSlice.injectEndpoints({
             }),
             invalidatesTags: ['Partners'],
         }),
+        submitPartnerInterest: builder.mutation({
+            query: (interest) => ({
+                url: '/partners/interest',
+                method: 'POST',
+                body: interest,
+            }),
+        }),
     }),
 });
 
@@ -47,4 +54,5 @@ export const {
     useCreatePartnerMutation,
     useUpdatePartnerMutation,
     useDeletePartnerMutation,
+    useSubmitPartnerInterestMutation,
 } = partnersApi;

@@ -15,7 +15,7 @@ export const paymentsApi = apiSlice.injectEndpoints({
                 method: 'POST',
                 body: data,
             }),
-            invalidatesTags: ['Bookings', 'Partners'], // Refresh tags if needed
+            invalidatesTags: ['Bookings'],
         }),
         getPaymentHistory: builder.query({
             query: () => '/payments/history',

@@ -116,6 +116,7 @@ const SideNav = memo(({ open, onClose }) => {
       { to: "/", icon: Home, text: "Home" },
       { to: "/about", icon: User, text: "About" },
       { to: "/partners", icon: Award, text: "Partners" },
+      { to: "/crops", icon: Sprout, text: "Our Crops" },
       { to: "/contact", icon: Mail, text: "Contact" },
 
       ...(isAuthenticated ? [

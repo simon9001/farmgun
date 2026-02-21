@@ -20,6 +20,7 @@ import {
 import { selectCurrentUser } from '../features/Slice/AuthSlice';
 import { useGetMyBookingsQuery } from '../features/Api/bookingsApi';
 import PaymentModal from '../components/PaymentModal';
+import ReviewModal from '../components/ReviewModal';
 
 import {
     useGetUserNotificationsQuery,
@@ -32,6 +33,7 @@ const Dashboard = () => {
     const [activeTab, setActiveTab] = useState('bookings');
 
     const [paymentModalData, setPaymentModalData] = useState({ isOpen: false, bookingId: null, phone: '', amount: 0, serviceName: '' });
+    const [reviewModalData, setReviewModalData] = useState({ isOpen: false });
 
 
     const {
@@ -67,6 +69,12 @@ const Dashboard = () => {
 
     return (
         <div className="min-h-screen bg-transparent py-8 px-4 sm:px-6 lg:px-8">
+            <ReviewModal
+                {...reviewModalData}
+                user={user}
+                onClose={() => setReviewModalData({ isOpen: false })}
+            />
+
             <PaymentModal
                 {...paymentModalData}
                 onClose={() => {
@@ -243,9 +251,16 @@ const Dashboard = () => {
                                                         className="w-full flex items-center justify-center gap-2 py-3 bg-green-600 hover:bg-green-700 text-white rounded-2xl text-sm font-bold shadow-lg shadow-green-200 dark:shadow-green-950 transition-all"
                                                     >
                                                         <CreditCard className="w-4 h-4" />
-                                                        Pay Now
                                                     </button>
                                                 </div>
+                                            ) : booking.status === 'completed' ? (
+                                                <button
+                                                    onClick={() => setReviewModalData({ isOpen: true })}
+                                                    className="w-full flex items-center justify-center gap-2 py-3 bg-white dark:bg-gray-800 text-green-600 border border-green-200 dark:border-green-800 rounded-2xl text-sm font-bold hover:bg-green-50 dark:hover:bg-green-900/20 transition-all shadow-sm"
+                                                >
+                                                    <Star className="w-4 h-4 fill-current" />
+                                                    Rate Your Session
+                                                </button>
                                             ) : null}
 
                                         </motion.div>

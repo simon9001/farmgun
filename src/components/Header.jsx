@@ -35,6 +35,7 @@ const Header = memo(({ toggleTheme, currentTheme, onHamburgerClick }) => {
     { to: "/", label: "Home" },
     { to: "/about", label: "About" },
     { to: "/partners", label: "Partners" },
+    { to: "/crops", label: "Our Crops" },
     { to: "/contact", label: "Contact" },
 
     ...(isAuthenticated ? [

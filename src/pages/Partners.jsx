@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Link as RouterLink } from 'react-router-dom';
 import { ExternalLink, Loader2, Award, Users, Filter, ArrowRight } from 'lucide-react';
 import { useGetActivePartnersQuery } from '../features/Api/partnersApi';
 
@@ -189,9 +190,9 @@ const Partners = () => {
                     <p className="text-gray-400 mb-8 max-w-xl mx-auto">
                         Are you a company that shares our vision of modernizing agriculture? Apply to become a verified partner and reach thousands of farmers.
                     </p>
-                    <button className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-xl font-bold transition-all transform hover:scale-105 flex items-center gap-2 mx-auto">
+                    <RouterLink to="/partners/apply" className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-xl font-bold transition-all transform hover:scale-105 inline-flex items-center gap-2 mx-auto">
                         Become a Partner <ArrowRight className="w-5 h-5" />
-                    </button>
+                    </RouterLink>
                 </div>
             </section>
         </div>

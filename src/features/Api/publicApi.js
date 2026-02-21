@@ -36,7 +36,15 @@ export const publicApi = apiSlice.injectEndpoints({
                 params
             }),
             providesTags: ['Tips'],
-        })
+        }),
+        createTestimonial: builder.mutation({
+            query: (testimonial) => ({
+                url: '/public/testimonials',
+                method: 'POST',
+                body: testimonial,
+            }),
+            invalidatesTags: ['Dashboard'],
+        }),
     }),
 });
 
@@ -45,7 +53,8 @@ export const {
     useGetPublicProjectsQuery,
     useGetPublicTestimonialsQuery,
     useGetPublicServicesQuery,
-    useGetPublicTipsQuery
+    useGetPublicTipsQuery,
+    useCreateTestimonialMutation,
 } = publicApi;
 
 

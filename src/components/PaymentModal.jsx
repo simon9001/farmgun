@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Phone, Loader2, AlertCircle, X, CheckCircle, ArrowRight } from 'lucide-react';
-import { useInitiatePaymentMutation } from '../features/Api/paymentsApi';
+import { useInitiatePaymentMutation, useVerifyPaymentMutation } from '../features/Api/paymentsApi';
 import { useGetBookingQuery } from '../features/Api/bookingsApi';
 
 
@@ -9,20 +9,24 @@ import { useGetBookingQuery } from '../features/Api/bookingsApi';
 const PaymentModal = ({ isOpen, onClose, bookingId, initialPhone, amount, serviceName }) => {
     const [paymentPhone, setPaymentPhone] = useState(initialPhone || '');
     const [step, setStep] = useState(initialPhone ? 'waiting' : 'input'); // input, waiting, success, error
-    const [timer, setTimer] = useState(30);
+    const [timer, setTimer] = useState(60); // Extended to 60s for M-Pesa
     const [initiateError, setInitiateError] = useState(null);
-    const [initiatePayment, { isLoading: isInitiating }] = useInitiatePaymentMutation();
+    const [reference, setReference] = useState(null); // ✅ Track reference from STK push
+    const hasAutoInitiated = useRef(false); // ✅ Prevent double auto-initiate
 
-    // Poll for booking status when in waiting step
+    const [initiatePayment, { isLoading: isInitiating }] = useInitiatePaymentMutation();
+    const [verifyPayment] = useVerifyPaymentMutation();
+
+    // Poll booking status every 4s while waiting
     const { data: bookingData } = useGetBookingQuery(bookingId, {
-        pollingInterval: (step === 'waiting' || step === 'error') ? 4000 : 0,
-        skip: !bookingId || (step !== 'waiting' && step !== 'error')
+        pollingInterval: step === 'waiting' ? 4000 : 0,
+        skip: !bookingId || step !== 'waiting',
     });
 
     const booking = bookingData?.booking;
     const payment = booking?.payments?.[0];
 
-    // Handle payment status updates from polling
+    // ✅ React to booking/payment status from DB polling
     useEffect(() => {
         if (booking?.status === 'paid') {
             setStep('success');
@@ -30,24 +34,43 @@ const PaymentModal = ({ isOpen, onClose, bookingId, initialPhone, amount, servic
             setStep('error');
             setInitiateError('Payment failed. Please ensure you have sufficient funds or try a different number.');
         }
-    }, [booking?.status, payment?.status, step]);
+    }, [booking?.status, payment?.status]);
 
-
+    // ✅ MAIN FIX: Actively poll verifyPayment using the reference as a fallback
+    // This updates the DB even without a webhook (works in development)
     useEffect(() => {
-        let interval;
+        if (step !== 'waiting' || !reference) return;
+        const interval = setInterval(async () => {
+            try {
+                const result = await verifyPayment({ reference }).unwrap();
+                if (result.status === 'success') {
+                    setStep('success');
+                    clearInterval(interval);
+                }
+            } catch {
+                // Not successful yet, keep waiting
+            }
+        }, 5000); // Poll every 5 seconds
+        return () => clearInterval(interval);
+    }, [step, reference]);
 
-        // Auto-initiate if phone is provided and we just opened
-        if (isOpen && initialPhone && step === 'waiting' && timer === 30 && !initiateError) {
+    // Timer countdown + auto-initiate on mount
+    useEffect(() => {
+        // Auto-trigger STK Push if phone is pre-filled (from Bookings page)
+        // Guards: useRef prevents re-entry, isInitiating prevents concurrent calls
+        if (isOpen && initialPhone && step === 'waiting' && !hasAutoInitiated.current && !isInitiating) {
+            hasAutoInitiated.current = true;
             handleInitiate(initialPhone);
         }
 
+        let interval;
         if (step === 'waiting' && timer > 0) {
             interval = setInterval(() => {
                 setTimer((prev) => prev - 1);
             }, 1000);
         } else if (timer === 0 && step === 'waiting') {
             setStep('error');
-            setInitiateError('Timeout reached. We didn\'t receive a confirmation. Please ensure your phone is nearby or try a different number.');
+            setInitiateError("Time's up. We didn't get a confirmation. If you entered your PIN, please wait a moment — we'll still detect the payment automatically.");
         }
         return () => clearInterval(interval);
     }, [step, timer, isOpen]);
@@ -73,12 +96,17 @@ const PaymentModal = ({ isOpen, onClose, bookingId, initialPhone, amount, servic
             const targetPhone = phoneToUse || paymentPhone;
             const formatted = formatPhone(targetPhone);
             setStep('waiting');
-            setTimer(30);
+            setTimer(60);
 
-            await initiatePayment({
+            const result = await initiatePayment({
                 booking_id: bookingId,
                 payment_phone: formatted
             }).unwrap();
+
+            // ✅ Store the reference so we can poll verifyPayment
+            if (result.reference) {
+                setReference(result.reference);
+            }
 
         } catch (err) {
             console.error('Payment initiation failed:', err);
@@ -167,7 +195,7 @@ const PaymentModal = ({ isOpen, onClose, bookingId, initialPhone, amount, servic
                                         stroke="currentColor"
                                         strokeWidth="8"
                                         strokeDasharray={251.2}
-                                        strokeDashoffset={251.2 * (1 - timer / 30)}
+                                        strokeDashoffset={251.2 * (1 - timer / 60)}
                                         strokeLinecap="round"
                                         className="text-green-600 transition-all duration-1000"
                                     />
