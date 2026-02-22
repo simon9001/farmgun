@@ -18,6 +18,7 @@ const bookingSchema = z.object({
     start_time: z.string().regex(/^\d{2}:\d{2}$/, 'Please select a time slot'),
     payment_phone: z.string().regex(/^(?:254|\+254|0)?(7|1)\d{8}$/, 'Invalid phone number'),
     user_notes: z.string().optional(),
+    pricing_option: z.string().optional(),
 });
 
 
@@ -38,7 +39,8 @@ const Bookings = () => {
             date: '',
             start_time: '',
             payment_phone: '',
-            user_notes: ''
+            user_notes: '',
+            pricing_option: ''
         }
     });
 
@@ -70,11 +72,21 @@ const Bookings = () => {
             const result = await createBooking(data).unwrap();
 
             // Open Payment Modal
+            const selectedService = servicesData?.services?.find(s => s.id === data.service_id);
+            let finalPrice = selectedService?.price;
+
+            if (data.pricing_option && selectedService?.pricing_options) {
+                const opt = selectedService.pricing_options.find(o => o.label === data.pricing_option);
+                if (opt && !opt.is_custom && opt.price) {
+                    finalPrice = opt.price;
+                }
+            }
+
             setPaymentModalData({
                 isOpen: true,
                 bookingId: result.booking.id,
                 initialPhone: data.payment_phone,
-                amount: result.booking.service.price,
+                amount: finalPrice || result.booking.service.price,
                 serviceName: result.booking.service.name
             });
 
@@ -134,6 +146,42 @@ const Bookings = () => {
                                 )}
                             </div>
 
+                            {/* Pricing Options */}
+                            {selectedServiceId && servicesData?.services?.find(s => s.id === selectedServiceId)?.pricing_options?.length > 0 && (
+                                <div className="space-y-3">
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                        1b. Choose Plan / Option
+                                    </label>
+                                    <div className="grid grid-cols-1 gap-2">
+                                        {servicesData.services.find(s => s.id === selectedServiceId).pricing_options.map((opt, i) => (
+                                            <label
+                                                key={i}
+                                                className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${watch('pricing_option') === opt.label
+                                                        ? 'border-green-600 bg-green-50 dark:bg-green-900/20'
+                                                        : 'border-gray-100 dark:border-gray-800 hover:border-green-200'
+                                                    }`}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <input
+                                                        type="radio"
+                                                        {...register('pricing_option')}
+                                                        value={opt.label}
+                                                        className="w-4 h-4 text-green-600 focus:ring-green-500"
+                                                    />
+                                                    <div>
+                                                        <span className="font-bold text-gray-900 dark:text-white uppercase text-xs tracking-wider">{opt.label}</span>
+                                                        {opt.note && <p className="text-[10px] text-gray-500 italic">{opt.note}</p>}
+                                                    </div>
+                                                </div>
+                                                <span className="font-bold text-green-600">
+                                                    {opt.is_custom ? 'Quote' : `KES ${opt.price}`}
+                                                </span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Date Selection */}
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
@@ -179,8 +227,6 @@ const Bookings = () => {
                                     </p>
                                 )}
                             </div>
-
-
 
                             {/* Notes */}
                             <div>
@@ -272,8 +318,8 @@ const Bookings = () => {
                         </div>
                     </form>
                 </div>
-            </motion.div>
-        </div>
+            </motion.div >
+        </div >
     );
 };
 

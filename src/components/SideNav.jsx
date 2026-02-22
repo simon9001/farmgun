@@ -10,12 +10,15 @@ import {
   Home,
   LogIn,
   LogOut,
-  Award
+  Award,
+  FileText
 } from "lucide-react";
 
 import { Link, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from 'react-redux';
 import { selectIsAuthenticated, selectCurrentUser, logout } from '../features/Slice/AuthSlice';
+import { apiSlice } from '../features/Api/apiSlice';
+import { useLogoutMutation } from '../features/Api/authApi';
 
 // Animation variants
 const navVariants = {
@@ -77,13 +80,21 @@ NavItem.displayName = "NavItem";
 const SideNav = memo(({ open, onClose }) => {
   const location = useLocation();
   const dispatch = useDispatch();
+  const [logoutMutation] = useLogoutMutation();
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const user = useSelector(selectCurrentUser);
 
-  const handleLogout = useCallback(() => {
-    dispatch(logout());
-    onClose();
-  }, [dispatch, onClose]);
+  const handleLogout = useCallback(async () => {
+    try {
+      await logoutMutation().unwrap();
+    } catch (err) {
+      console.error('Logout failed:', err);
+    } finally {
+      dispatch(logout());
+      dispatch(apiSlice.util.resetApiState());
+      onClose();
+    }
+  }, [dispatch, logoutMutation, onClose]);
 
   // Memoize event handlers
   const handleKeyDown = useCallback((e) => {
@@ -117,6 +128,7 @@ const SideNav = memo(({ open, onClose }) => {
       { to: "/about", icon: User, text: "About" },
       { to: "/partners", icon: Award, text: "Partners" },
       { to: "/crops", icon: Sprout, text: "Our Crops" },
+      { to: "/blogs", icon: FileText, text: "Blogs" },
       { to: "/contact", icon: Mail, text: "Contact" },
 
       ...(isAuthenticated ? [

@@ -134,7 +134,7 @@ const ServiceModal = ({ isOpen, onClose, serviceToEdit }) => {
                                 required
                             />
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-1">
                             <label className="text-xs font-bold text-gray-500 uppercase">Duration (Minutes)</label>
                             <select
                                 value={form.duration_mins}
@@ -148,6 +148,14 @@ const ServiceModal = ({ isOpen, onClose, serviceToEdit }) => {
                                 <option value={120}>2 Hours</option>
                             </select>
                         </div>
+                    </div>
+
+                    <div className="pt-2">
+                        <ImageUpload
+                            label="Service Thumbnail (Featured Image)"
+                            initialMediaId={form.featured_media_id}
+                            onUploadComplete={(mediaId) => setForm(prev => ({ ...prev, featured_media_id: mediaId }))}
+                        />
                     </div>
 
                     <div className="space-y-2">

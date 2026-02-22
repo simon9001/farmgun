@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, ArrowRight, Tag, Info } from 'lucide-react';
+import { X, Calendar, ArrowRight, Tag, Info, Check } from 'lucide-react';
 import ImageCarousel from './ImageCarousel';
 
 const ProjectCropDetailModal = ({ isOpen, onClose, data, type }) => {

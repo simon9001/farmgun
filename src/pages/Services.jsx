@@ -77,6 +77,11 @@ const Services = () => {
                                 </div>
                             </div>
                             <div className="p-6">
+                                {service.tagline && (
+                                    <p className="text-xs font-bold text-green-600 dark:text-green-400 uppercase tracking-wider mb-1">
+                                        {service.tagline}
+                                    </p>
+                                )}
                                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                                     {service.name}
                                 </h3>

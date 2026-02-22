@@ -8,10 +8,11 @@ import { useGetBookingQuery } from '../features/Api/bookingsApi';
 
 const PaymentModal = ({ isOpen, onClose, bookingId, initialPhone, amount, serviceName }) => {
     const [paymentPhone, setPaymentPhone] = useState(initialPhone || '');
-    const [step, setStep] = useState(initialPhone ? 'waiting' : 'input'); // input, waiting, success, error
+    const [paymentMethod, setPaymentMethod] = useState('mpesa'); // mpesa, card
+    const [step, setStep] = useState(initialPhone ? 'waiting' : 'input'); // input, waiting, success, error, redirecting
     const [timer, setTimer] = useState(60); // Extended to 60s for M-Pesa
     const [initiateError, setInitiateError] = useState(null);
-    const [reference, setReference] = useState(null); // ✅ Track reference from STK push
+    const [reference, setReference] = useState(null); // ✅ Track reference
     const hasAutoInitiated = useRef(false); // ✅ Prevent double auto-initiate
 
     const [initiatePayment, { isLoading: isInitiating }] = useInitiatePaymentMutation();
@@ -90,22 +91,35 @@ const PaymentModal = ({ isOpen, onClose, bookingId, initialPhone, amount, servic
         return formatted;
     };
 
-    const handleInitiate = async (phoneToUse) => {
+    const handleInitiate = async (phoneToUse, methodToUse = paymentMethod) => {
         try {
             setInitiateError(null);
+            setReference(null); // Clear stale reference before a fresh attempt
             const targetPhone = phoneToUse || paymentPhone;
-            const formatted = formatPhone(targetPhone);
-            setStep('waiting');
-            setTimer(60);
+            const formatted = methodToUse === 'mpesa' ? formatPhone(targetPhone) : null;
+
+            if (methodToUse === 'mpesa') {
+                setStep('waiting');
+                setTimer(60);
+            } else {
+                setStep('waiting');
+            }
 
             const result = await initiatePayment({
                 booking_id: bookingId,
-                payment_phone: formatted
+                payment_phone: formatted,
+                payment_method: methodToUse
             }).unwrap();
 
-            // ✅ Store the reference so we can poll verifyPayment
+            // Store the reference returned by the server (always fresh from FSM)
             if (result.reference) {
                 setReference(result.reference);
+            }
+
+            // Handle Card Redirect
+            if (methodToUse === 'card' && result.authorization_url) {
+                window.location.href = result.authorization_url;
+                return;
             }
 
         } catch (err) {
@@ -129,8 +143,8 @@ const PaymentModal = ({ isOpen, onClose, bookingId, initialPhone, amount, servic
                 {/* Header */}
                 <div className="bg-green-600 px-6 py-4 flex items-center justify-between text-white">
                     <h3 className="font-bold flex items-center gap-2">
-                        <Phone className="w-4 h-4" />
-                        M-Pesa Payment
+                        {paymentMethod === 'mpesa' ? <Phone className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
+                        {paymentMethod === 'mpesa' ? 'M-Pesa Payment' : 'Card Payment'}
                     </h3>
                     <button onClick={onClose} className="p-1 hover:bg-green-700 rounded-full transition-colors">
                         <X className="w-5 h-5" />
@@ -146,29 +160,52 @@ const PaymentModal = ({ isOpen, onClose, bookingId, initialPhone, amount, servic
                                 <div className="text-2xl font-black text-green-600 mt-1">Ksh {amount}</div>
                             </div>
 
-                            <div>
-                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
-                                    Confirm M-Pesa Number
-                                </label>
-                                <div className="relative">
-                                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                    <input
-                                        type="tel"
-                                        value={paymentPhone}
-                                        onChange={(e) => setPaymentPhone(e.target.value)}
-                                        className="w-full pl-12 rounded-xl border-border border-2 px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-800 dark:text-white transition-all text-lg font-medium"
-                                        placeholder="0712345678"
-                                    />
-                                </div>
+                            <div className="flex p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
+                                <button
+                                    onClick={() => setPaymentMethod('mpesa')}
+                                    className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${paymentMethod === 'mpesa' ? 'bg-white dark:bg-gray-700 shadow-sm text-green-600' : 'text-gray-500'}`}
+                                >
+                                    M-Pesa
+                                </button>
+                                <button
+                                    onClick={() => setPaymentMethod('card')}
+                                    className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${paymentMethod === 'card' ? 'bg-white dark:bg-gray-700 shadow-sm text-green-600' : 'text-gray-500'}`}
+                                >
+                                    Card / Bank
+                                </button>
                             </div>
+
+                            {paymentMethod === 'mpesa' ? (
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
+                                        Confirm M-Pesa Number
+                                    </label>
+                                    <div className="relative">
+                                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                        <input
+                                            type="tel"
+                                            value={paymentPhone}
+                                            onChange={(e) => setPaymentPhone(e.target.value)}
+                                            className="w-full pl-12 rounded-xl border-border border-2 px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-800 dark:text-white transition-all text-lg font-medium"
+                                            placeholder="0712345678"
+                                        />
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="p-4 bg-green-50 dark:bg-green-900/10 rounded-xl border border-green-100 dark:border-green-900/30">
+                                    <p className="text-sm text-green-700 dark:text-green-400 text-center">
+                                        You will be redirected to Paystack's secure checkout to complete your transaction with your Credit/Debit card.
+                                    </p>
+                                </div>
+                            )}
 
                             <button
                                 onClick={() => handleInitiate()}
-                                disabled={isInitiating || !paymentPhone}
+                                disabled={isInitiating || (paymentMethod === 'mpesa' && !paymentPhone)}
                                 className="w-full bg-green-600 text-white font-bold py-4 rounded-xl hover:bg-green-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-green-200 dark:shadow-green-950/20"
                             >
                                 {isInitiating ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowRight className="w-5 h-5" />}
-                                Send Payment Prompt
+                                {paymentMethod === 'mpesa' ? 'Send M-Pesa Prompt' : 'Proceed to Secure Card Payment'}
                             </button>
 
                         </div>

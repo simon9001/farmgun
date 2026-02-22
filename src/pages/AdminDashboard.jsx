@@ -17,9 +17,10 @@ import ProjectModal from '../components/Admin/ProjectModal';
 import BookingModal from '../components/Admin/BookingModal';
 import PartnerModal from '../components/Admin/PartnerModal';
 import {
-
     useGetDashboardStatsQuery,
     useGetAllUsersQuery,
+    useGetBlogsQuery,
+    useGetTipsQuery,
     useGetAllBookingsQuery,
     useGetSettingsQuery,
     useDeleteServiceMutation,
@@ -27,6 +28,7 @@ import {
     useUpdateUserRoleMutation,
     useDeleteUserMutation,
     useDeleteTipMutation,
+    useDeleteBlogMutation,
     useDeleteProjectMutation,
     useUpdateSettingsMutation,
     useLazyExportDataQuery,
@@ -70,7 +72,8 @@ const AdminDashboard = () => {
         { id: 'services', name: 'Services', icon: Briefcase },
         { id: 'users', name: 'User Management', icon: Users },
         { id: 'crops', name: 'Crops Database', icon: Sprout },
-        { id: 'blog', name: 'Blog & Tips', icon: FileText },
+        { id: 'blog', name: 'Blogs', icon: FileText },
+        { id: 'tips', name: 'Farming Tips', icon: FileText },
         { id: 'projects', name: 'Our Projects', icon: Briefcase },
         { id: 'partners', name: 'Partners', icon: Award },
         { id: 'testimonials', name: 'Testimonials', icon: MessageSquare },
@@ -86,6 +89,7 @@ const AdminDashboard = () => {
             case 'users': return <UsersTab />;
             case 'crops': return <CropsTab />;
             case 'blog': return <BlogTab />;
+            case 'tips': return <TipsTab />;
             case 'projects': return <ProjectsTab />;
             case 'partners': return <PartnersTab />;
             case 'testimonials': return <TestimonialsTab />;
@@ -950,9 +954,9 @@ const CropsTab = () => {
 };
 
 const BlogTab = () => {
-    const { data: tipsData } = useGetPublicTipsQuery({});
-    const [deleteTip] = useDeleteTipMutation();
-    const tips = tipsData?.tips || [];
+    const { data: blogsData } = useGetBlogsQuery();
+    const [deleteBlog] = useDeleteBlogMutation();
+    const blogs = blogsData?.blogs || [];
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingPost, setEditingPost] = useState(null);
@@ -963,11 +967,11 @@ const BlogTab = () => {
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm('Are you sure you want to delete this post?')) {
+        if (window.confirm('Are you sure you want to delete this blog?')) {
             try {
-                await deleteTip(id).unwrap();
+                await deleteBlog(id).unwrap();
             } catch (err) {
-                alert('Failed to delete post');
+                alert('Failed to delete blog');
             }
         }
     };
@@ -981,53 +985,56 @@ const BlogTab = () => {
         <>
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden text-sm shadow-sm">
                 <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/30 dark:bg-gray-900/30">
-                    <h3 className="font-bold text-gray-900 dark:text-white">Blog & Expert Tips</h3>
+                    <h3 className="font-bold text-gray-900 dark:text-white">Blogs</h3>
                     <button
                         onClick={handleOpenCreate}
                         className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition-colors shadow-lg shadow-green-100 dark:shadow-none"
                     >
-                        <Plus className="w-4 h-4" /> New Post
+                        <Plus className="w-4 h-4" /> New Blog
                     </button>
                 </div>
                 <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                    {tips.map(t => (
-                        <div key={t.id} className="p-6 flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-shadow">
+                    {blogs.map(b => (
+                        <div key={b.id} className="p-6 flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-shadow">
                             <div className="flex gap-4">
-                                <div className="w-24 h-16 rounded-lg bg-green-50 dark:bg-green-900/30 flex-shrink-0 flex items-center justify-center">
-                                    <FileText className="w-6 h-6 text-green-600 opacity-20" />
+                                <div className="w-24 h-16 rounded-lg bg-green-50 dark:bg-green-900/30 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                                    {b.featured_media ? (
+                                        <img src={b.featured_media.optimized_url || b.featured_media.url} alt={b.title} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <FileText className="w-6 h-6 text-green-600 opacity-20" />
+                                    )}
                                 </div>
                                 <div>
-                                    <h4 className="font-bold text-gray-900 dark:text-white mb-1">{t.title}</h4>
+                                    <h4 className="font-bold text-gray-900 dark:text-white mb-1">{b.title}</h4>
                                     <div className="flex items-center gap-4 text-xs text-gray-500">
-                                        <span>Published: {new Date(t.published_at).toLocaleDateString()}</span>
-                                        <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${t.status === 'published' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                                            }`}>
-                                            {t.status}
+                                        <span>Published: {new Date(b.published_at).toLocaleDateString()}</span>
+                                        <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-black ${b.status === 'published' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                            {b.status}
                                         </span>
                                     </div>
                                 </div>
                             </div>
                             <div className="flex gap-2">
                                 <button
-                                    onClick={() => handleEdit(t)}
+                                    onClick={() => handleEdit(b)}
                                     className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
-                                    title="Edit Post"
+                                    title="Edit Blog"
                                 >
                                     <Edit3 className="w-5 h-5" />
                                 </button>
                                 <button
-                                    onClick={() => handleDelete(t.id)}
+                                    onClick={() => handleDelete(b.id)}
                                     className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                                    title="Delete Post"
+                                    title="Delete Blog"
                                 >
                                     <Trash2 className="w-5 h-5" />
                                 </button>
                             </div>
                         </div>
                     ))}
-                    {tips.length === 0 && (
-                        <div className="p-12 text-center text-gray-500">
-                            No posts found. Start by creating your first tip!
+                    {blogs.length === 0 && (
+                        <div className="p-12 text-center text-gray-500 font-bold italic">
+                            No blogs found. Start sharing your expertise!
                         </div>
                     )}
                 </div>
@@ -1037,6 +1044,100 @@ const BlogTab = () => {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 postToEdit={editingPost}
+                type="blog"
+            />
+        </>
+    );
+};
+
+const TipsTab = () => {
+    const { data: tipsData } = useGetTipsQuery();
+    const [deleteTip] = useDeleteTipMutation();
+    const tips = tipsData?.tips || [];
+
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingPost, setEditingPost] = useState(null);
+
+    const handleEdit = (post) => {
+        setEditingPost(post);
+        setIsModalOpen(true);
+    };
+
+    const handleDelete = async (id) => {
+        if (window.confirm('Are you sure you want to delete this tip?')) {
+            try {
+                await deleteTip(id).unwrap();
+            } catch (err) {
+                alert('Failed to delete tip');
+            }
+        }
+    };
+
+    const handleOpenCreate = () => {
+        setEditingPost(null);
+        setIsModalOpen(true);
+    };
+
+    return (
+        <>
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden text-sm shadow-sm">
+                <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/30 dark:bg-gray-900/30">
+                    <h3 className="font-bold text-gray-900 dark:text-white">Farming Tips</h3>
+                    <button
+                        onClick={handleOpenCreate}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-100 dark:shadow-none"
+                    >
+                        <Plus className="w-4 h-4" /> New Tip
+                    </button>
+                </div>
+                <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                    {tips.map(t => (
+                        <div key={t.id} className="p-6 flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-shadow">
+                            <div className="flex gap-4">
+                                <div className="w-12 h-12 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex-shrink-0 flex items-center justify-center">
+                                    <FileText className="w-5 h-5 text-blue-600 opacity-40" />
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-gray-900 dark:text-white mb-1">{t.title}</h4>
+                                    <div className="flex items-center gap-4 text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+                                        <span>Created: {new Date(t.created_at).toLocaleDateString()}</span>
+                                        <span className={`px-2 py-0.5 rounded ${t.status === 'published' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                            {t.status}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => handleEdit(t)}
+                                    className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                                    title="Edit Tip"
+                                >
+                                    <Edit3 className="w-5 h-5" />
+                                </button>
+                                <button
+                                    onClick={() => handleDelete(t.id)}
+                                    className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                                    title="Delete Tip"
+                                >
+                                    <Trash2 className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                    {tips.length === 0 && (
+                        <div className="p-12 text-center text-gray-500 italic font-bold">
+                            No farming tips found.
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            <PostModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                postToEdit={editingPost}
+                type="tip"
             />
         </>
     );

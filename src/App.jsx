@@ -12,9 +12,10 @@ import Projects from './pages/Projects';
 import Testimonials from './pages/Testimonials';
 import Partners from './pages/Partners';
 import Crops from './pages/Crops';
+import Blogs from './pages/Blogs';
 import PartnerApply from './pages/PartnerApply';
 import UserRoute from './components/auth/UserRoute';
-
+import GuestRoute from './components/auth/GuestRoute';
 import AdminRoute from './components/auth/AdminRoute';
 
 // Import pages
@@ -28,6 +29,7 @@ import Dashboard from "./pages/Dashboard";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import PaymentCallback from "./pages/PaymentCallback";
+import Profile from "./pages/Profile";
 
 
 
@@ -94,14 +96,18 @@ const AnimatedRoutes = memo(() => {
           </motion.div>
         } />
         <Route path="/login" element={
-          <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
-            <Login />
-          </motion.div>
+          <GuestRoute>
+            <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
+              <Login />
+            </motion.div>
+          </GuestRoute>
         } />
         <Route path="/register" element={
-          <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
-            <Register />
-          </motion.div>
+          <GuestRoute>
+            <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
+              <Register />
+            </motion.div>
+          </GuestRoute>
         } />
         <Route path="/forgot-password" element={
           <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
@@ -160,6 +166,14 @@ const AnimatedRoutes = memo(() => {
         />
 
         <Route
+          path="/blogs"
+          element={
+            <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
+              <Blogs />
+            </motion.div>
+          }
+        />
+        <Route
           path="/projects"
           element={
             <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
@@ -198,6 +212,16 @@ const AnimatedRoutes = memo(() => {
                 <AdminDashboard />
               </motion.div>
             </AdminRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <UserRoute>
+              <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
+                <Profile />
+              </motion.div>
+            </UserRoute>
           }
         />
       </Routes>

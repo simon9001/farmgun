@@ -37,6 +37,17 @@ export const publicApi = apiSlice.injectEndpoints({
             }),
             providesTags: ['Tips'],
         }),
+        getPublicBlogs: builder.query({
+            query: (params) => ({
+                url: '/public/blogs',
+                params
+            }),
+            providesTags: ['Blogs'],
+        }),
+        getPublicBlogBySlug: builder.query({
+            query: (slug) => `/public/blogs/${slug}`,
+            providesTags: (result, error, slug) => [{ type: 'Blogs', id: slug }],
+        }),
         createTestimonial: builder.mutation({
             query: (testimonial) => ({
                 url: '/public/testimonials',
@@ -54,6 +65,8 @@ export const {
     useGetPublicTestimonialsQuery,
     useGetPublicServicesQuery,
     useGetPublicTipsQuery,
+    useGetPublicBlogsQuery,
+    useGetPublicBlogBySlugQuery,
     useCreateTestimonialMutation,
 } = publicApi;
 

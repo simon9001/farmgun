@@ -129,6 +129,11 @@ export const adminApi = apiSlice.injectEndpoints({
             providesTags: ['Bookings', 'Dashboard'],
         }),
 
+        getTips: builder.query({
+            query: () => '/admin/tips',
+            providesTags: ['Tips'],
+        }),
+
         updateBooking: builder.mutation({
             query: ({ id, ...data }) => ({
                 url: `/admin/bookings/${id}`,
@@ -136,6 +141,23 @@ export const adminApi = apiSlice.injectEndpoints({
                 body: data,
             }),
             invalidatesTags: ['Bookings', 'Dashboard'],
+        }),
+
+        deleteBooking: builder.mutation({
+            query: (id) => ({
+                url: `/admin/bookings/${id}`,
+                method: 'DELETE',
+            }),
+            invalidatesTags: ['Bookings', 'Dashboard'],
+        }),
+
+        rescheduleBooking: builder.mutation({
+            query: ({ id, ...data }) => ({
+                url: `/admin/bookings/${id}/reschedule`,
+                method: 'POST',
+                body: data,
+            }),
+            invalidatesTags: ['Bookings'],
         }),
         // Tips management
         createTip: builder.mutation({
@@ -162,6 +184,38 @@ export const adminApi = apiSlice.injectEndpoints({
                 method: 'DELETE',
             }),
             invalidatesTags: ['Tips'],
+        }),
+
+        getBlogs: builder.query({
+            query: () => '/admin/blogs',
+            providesTags: ['Blogs'],
+        }),
+
+        // Blogs management
+        createBlog: builder.mutation({
+            query: (blog) => ({
+                url: '/admin/blogs',
+                method: 'POST',
+                body: blog,
+            }),
+            invalidatesTags: ['Blogs'],
+        }),
+
+        updateBlog: builder.mutation({
+            query: ({ id, ...blog }) => ({
+                url: `/admin/blogs/${id}`,
+                method: 'PATCH',
+                body: blog,
+            }),
+            invalidatesTags: ['Blogs'],
+        }),
+
+        deleteBlog: builder.mutation({
+            query: (id) => ({
+                url: `/admin/blogs/${id}`,
+                method: 'DELETE',
+            }),
+            invalidatesTags: ['Blogs'],
         }),
 
         // Settings
@@ -231,9 +285,16 @@ export const {
     useDeleteProjectMutation,
     useGetAllBookingsQuery,
     useUpdateBookingMutation,
+    useDeleteBookingMutation,
+    useRescheduleBookingMutation,
     useCreateTipMutation,
     useUpdateTipMutation,
     useDeleteTipMutation,
+    useGetBlogsQuery,
+    useCreateBlogMutation,
+    useUpdateBlogMutation,
+    useDeleteBlogMutation,
+    useGetTipsQuery,
     useGetSettingsQuery,
     useUpdateSettingsMutation,
     useLazyExportDataQuery,

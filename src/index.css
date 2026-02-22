@@ -360,6 +360,42 @@ button:focus-visible,
   }
 }
 
+/* BLOG CONTENT & BOOK TEXTURE */
+.blog-content {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  line-height: 1.8;
+  color: var(--foreground);
+}
+
+.blog-content h1, .blog-content h2, .blog-content h3 {
+  color: var(--foreground);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-top: 2em;
+  margin-bottom: 0.5em;
+}
+
+.blog-content p {
+  margin-bottom: 1.5em;
+  font-size: 1.125rem;
+}
+
+.paper-texture {
+  background-color: #fafaf9;
+  background-image: url("https://www.transparenttextures.com/patterns/paper.png");
+}
+
+.dark .paper-texture {
+  background-color: oklch(0.141 0.005 285.823);
+  background-image: none;
+}
+
+.book-shadow {
+  box-shadow: 
+    0 5px 15px rgba(0,0,0,0.05),
+    10px 10px 30px rgba(0,0,0,0.1);
+}
+
 /* COMPONENT-SPECIFIC STYLES */
 .btn {
   @apply inline-flex items-center justify-center rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
