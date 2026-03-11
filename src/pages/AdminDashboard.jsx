@@ -22,6 +22,7 @@ import {
     useGetBlogsQuery,
     useGetTipsQuery,
     useGetAllBookingsQuery,
+    useDeleteBookingMutation,
     useGetSettingsQuery,
     useDeleteServiceMutation,
     useDeleteCropMutation,
@@ -479,6 +480,7 @@ const SendNotificationForm = () => {
 
 const BookingsTab = () => {
     const { data: bookingsData, isLoading } = useGetAllBookingsQuery({});
+    const [deleteBooking] = useDeleteBookingMutation();
     const bookings = bookingsData?.bookings || [];
 
     const [selectedBooking, setSelectedBooking] = useState(null);
@@ -488,9 +490,12 @@ const BookingsTab = () => {
     };
 
     const handleCancel = async (id) => {
-        if (window.confirm('Are you sure you want to cancel this booking? This will notify the user.')) {
-            // Cancellation logic
-            alert('Cancellation logic for booking ' + id);
+        if (window.confirm('Are you sure you want to cancel and delete this booking? This will notify the user.')) {
+            try {
+                await deleteBooking(id).unwrap();
+            } catch (err) {
+                alert('Failed to delete booking: ' + (err.data?.error || 'Unknown error'));
+            }
         }
     };
 
