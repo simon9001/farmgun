@@ -55,7 +55,7 @@ const AdminDashboard = () => {
     const user = useSelector(selectCurrentUser);
     const [activeTab, setActiveTab] = useState('overview');
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const { data: statsData, isLoading: statsLoading } = useGetDashboardStatsQuery();
+    const { data: statsData, isLoading: statsLoading } = useGetDashboardStatsQuery({}, { pollingInterval: 30000 });
 
     if (user?.role !== 'admin') {
         return (
@@ -479,7 +479,7 @@ const SendNotificationForm = () => {
 };
 
 const BookingsTab = () => {
-    const { data: bookingsData, isLoading } = useGetAllBookingsQuery({});
+    const { data: bookingsData, isLoading } = useGetAllBookingsQuery({}, { pollingInterval: 30000 });
     const [deleteBooking] = useDeleteBookingMutation();
     const bookings = bookingsData?.bookings || [];
 

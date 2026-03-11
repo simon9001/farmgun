@@ -24,7 +24,7 @@ const Profile = () => {
     const [activeSection, setActiveSection] = useState('overview');
 
     const { data: bookingsData, isLoading: bookingsLoading } = useGetMyBookingsQuery();
-    const { data: notificationsData, isLoading: notificationsLoading } = useGetUserNotificationsQuery();
+    const { data: notificationsData, isLoading: notificationsLoading } = useGetUserNotificationsQuery({}, { pollingInterval: 30000 });
 
     const bookings = bookingsData?.bookings?.slice(0, 3) || [];
     const notifications = notificationsData?.notifications?.slice(0, 5) || [];
@@ -181,7 +181,9 @@ const Profile = () => {
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-sm text-foreground leading-tight">{notif.message}</p>
                                                     <p className="text-[10px] text-muted-foreground mt-1.5 uppercase font-bold tracking-tighter">
-                                                        {new Date(notif.created_at).toLocaleDateString()} at {new Date(notif.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        {notif.created_at && !isNaN(new Date(notif.created_at).getTime())
+                                                            ? `${new Date(notif.created_at).toLocaleDateString()} at ${new Date(notif.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                                                            : 'Just now'}
                                                     </p>
                                                 </div>
                                             </div>

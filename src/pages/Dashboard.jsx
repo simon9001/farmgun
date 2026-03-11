@@ -47,14 +47,14 @@ const Dashboard = () => {
         data: notificationsData,
         isLoading: isNotificationsLoading,
         refetch: refetchNotifications
-    } = useGetUserNotificationsQuery();
+    } = useGetUserNotificationsQuery({}, { pollingInterval: 30000 });
 
     const [markAsRead] = useMarkAsReadMutation();
     const [markAllAsRead] = useMarkAllAsReadMutation();
 
     const bookings = bookingsData?.bookings || [];
     const notifications = notificationsData?.notifications || [];
-    const unreadCount = notifications.filter(n => !n.is_read).length;
+    const unreadCount = notifications.filter(n => !n.read).length;
 
     const getStatusColor = (status) => {
         switch (status) {
@@ -320,7 +320,7 @@ const Dashboard = () => {
                                         <motion.div
                                             key={notif.id}
                                             layout
-                                            className={`group flex gap-4 p-5 rounded-3xl border transition-all duration-300 ${notif.is_read
+                                            className={`group flex gap-4 p-5 rounded-3xl border transition-all duration-300 ${notif.read
                                                 ? 'bg-white/40 dark:bg-gray-900/40 border-border/50 opacity-80'
                                                 : 'bg-white dark:bg-gray-900 border-green-100 dark:border-green-900/30 shadow-sm'
                                                 }`}
@@ -334,10 +334,10 @@ const Dashboard = () => {
 
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-start justify-between gap-2">
-                                                    <p className={`text-sm leading-relaxed ${notif.is_read ? 'text-muted-foreground' : 'text-foreground font-medium'}`}>
+                                                    <p className={`text-sm leading-relaxed ${notif.read ? 'text-muted-foreground' : 'text-foreground font-medium'}`}>
                                                         {notif.message}
                                                     </p>
-                                                    {!notif.is_read && (
+                                                    {!notif.read && (
                                                         <button
                                                             onClick={() => markAsRead(notif.id)}
                                                             className="flex-shrink-0 text-[10px] font-bold text-green-600 uppercase tracking-tighter hover:underline"
@@ -347,12 +347,12 @@ const Dashboard = () => {
                                                     )}
                                                 </div>
                                                 <p className="text-[10px] text-muted-foreground mt-2 flex items-center gap-1">
-                                                    {new Date(notif.created_at).toLocaleString('en-KE', {
+                                                    {notif.created_at && !isNaN(new Date(notif.created_at).getTime()) ? new Date(notif.created_at).toLocaleString('en-KE', {
                                                         month: 'short',
                                                         day: 'numeric',
                                                         hour: '2-digit',
                                                         minute: '2-digit'
-                                                    })}
+                                                    }) : 'Just now'}
                                                 </p>
                                             </div>
                                         </motion.div>
