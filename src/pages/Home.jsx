@@ -40,10 +40,10 @@ const HERO_IMAGES = [
 
 const Home = () => {
     // Fetch featured data
-    const { data: cropsData, isLoading: cropsLoading } = useGetPublicCropsQuery({ featured: true, limit: 3 });
-    const { data: projectsData, isLoading: projectsLoading } = useGetPublicProjectsQuery({ featured: true, limit: 3 });
+    const { data: cropsData, isLoading: cropsLoading } = useGetPublicCropsQuery({ featured: true, limit: 12 });
+    const { data: projectsData, isLoading: projectsLoading } = useGetPublicProjectsQuery({ featured: true, limit: 12 });
     const { data: testimonialsData, isLoading: testimonialsLoading } = useGetPublicTestimonialsQuery({ featured: true, limit: 3 });
-    const { data: servicesData, isLoading: servicesLoading } = useGetPublicServicesQuery({ featured: true, limit: 3 });
+    const { data: servicesData, isLoading: servicesLoading } = useGetPublicServicesQuery({ featured: true, limit: 12 });
 
     const [selectedItem, setSelectedItem] = useState(null);
     const [detailType, setDetailType] = useState('project');
@@ -187,17 +187,17 @@ const Home = () => {
                             <Loader2 className="w-8 h-8 animate-spin text-green-600" />
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div className="grid grid-rows-2 grid-flow-col gap-6 overflow-x-auto snap-x snap-mandatory pb-6 auto-cols-[100%] md:auto-cols-[calc(33.333%-1rem)] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                             {featuredServices.map((service, index) => (
                                 <motion.div
                                     key={service.id}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    whileInView={{ opacity: 1, scale: 1 }}
                                     viewport={{ once: true }}
                                     transition={{ delay: index * 0.1 }}
-                                    className="group bg-white dark:bg-gray-900 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300"
+                                    className="snap-start group bg-white dark:bg-gray-900 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 flex flex-col h-full"
                                 >
-                                    <div className="h-48 overflow-hidden">
+                                    <div className="h-40 overflow-hidden shrink-0">
                                         {(service.featured_media?.optimized_url || service.featured_media?.url) ? (
                                             <img
                                                 src={service.featured_media.optimized_url || service.featured_media.url}
@@ -210,16 +210,16 @@ const Home = () => {
                                             </div>
                                         )}
                                     </div>
-                                    <div className="p-6">
-                                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{service.name}</h3>
-                                        <p className="text-gray-600 dark:text-gray-400 line-clamp-2 mb-4">{service.description}</p>
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-lg font-bold text-green-600">
+                                    <div className="p-5 flex flex-col flex-grow">
+                                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{service.name}</h3>
+                                        <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2 mb-4 flex-grow">{service.description}</p>
+                                        <div className="flex items-center justify-between mt-auto">
+                                            <span className="text-base font-bold text-green-600">
                                                 {service.price ? `Ksh ${service.price}` : 'Contact Us'}
                                             </span>
                                             <Link
                                                 to={`/booking?serviceId=${service.id}`}
-                                                className="text-green-600 hover:text-green-700 font-medium inline-flex items-center"
+                                                className="text-green-600 hover:text-green-700 font-medium inline-flex items-center text-sm"
                                             >
                                                 Book <ArrowRight className="w-4 h-4 ml-1" />
                                             </Link>
@@ -254,22 +254,22 @@ const Home = () => {
                             <Loader2 className="w-8 h-8 animate-spin text-green-600" />
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div className="grid grid-rows-2 grid-flow-col gap-6 overflow-x-auto snap-x snap-mandatory pb-6 auto-cols-[100%] md:auto-cols-[calc(33.333%-1rem)] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                             {featuredCrops.map((crop, index) => (
                                 <motion.div
                                     key={crop.id}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    whileInView={{ opacity: 1, scale: 1 }}
                                     viewport={{ once: true }}
                                     transition={{ delay: index * 0.1 }}
-                                    className="group bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer"
+                                    className="snap-start group bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col h-full"
                                     onClick={() => {
                                         setSelectedItem(crop);
                                         setDetailType('crop');
                                         setIsDetailOpen(true);
                                     }}
                                 >
-                                    <div className="h-48 overflow-hidden">
+                                    <div className="h-48 overflow-hidden shrink-0">
                                         <ImageCarousel
                                             images={[
                                                 crop.featured_media?.optimized_url || crop.featured_media?.url,
@@ -278,10 +278,10 @@ const Home = () => {
                                             className="transition-transform duration-500 group-hover:scale-110"
                                         />
                                     </div>
-                                    <div className="p-6">
-                                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{crop.name}</h3>
-                                        <p className="text-gray-600 dark:text-gray-400 line-clamp-2 mb-4">{crop.description}</p>
-                                        <div className="inline-flex items-center text-green-600 font-semibold hover:text-green-700">
+                                    <div className="p-5 flex flex-col flex-grow">
+                                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{crop.name}</h3>
+                                        <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2 mb-4 flex-grow">{crop.description}</p>
+                                        <div className="inline-flex items-center text-green-600 font-semibold hover:text-green-700 mt-auto text-sm">
                                             View Details <ArrowRight className="w-4 h-4 ml-1" />
                                         </div>
                                     </div>
@@ -311,7 +311,7 @@ const Home = () => {
                             <Loader2 className="w-8 h-8 animate-spin text-green-600" />
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <div className="grid grid-rows-2 grid-flow-col gap-6 overflow-x-auto snap-x snap-mandatory pb-6 auto-cols-[100%] md:auto-cols-[calc(33.333%-1rem)] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                             {featuredProjects.map((project, index) => (
                                 <motion.div
                                     key={project.id}
@@ -319,23 +319,23 @@ const Home = () => {
                                     whileInView={{ opacity: 1, scale: 1 }}
                                     viewport={{ once: true }}
                                     transition={{ delay: index * 0.1 }}
-                                    className="bg-white dark:bg-gray-900 rounded-xl overflow-hidden shadow-lg cursor-pointer group"
+                                    className="snap-start bg-white dark:bg-gray-900 rounded-xl overflow-hidden shadow-lg cursor-pointer group flex flex-col h-full"
                                     onClick={() => {
                                         setSelectedItem(project);
                                         setDetailType('project');
                                         setIsDetailOpen(true);
                                     }}
                                 >
-                                    <div className="h-64 relative">
+                                    <div className="h-56 relative shrink-0">
                                         <ImageCarousel
                                             images={[
                                                 project.featured_media?.optimized_url || project.featured_media?.url,
                                                 ...(project.project_media?.map(pm => pm.media?.optimized_url || pm.media?.url) || [])
                                             ].filter(Boolean)}
                                         />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-6 pointer-events-none">
-                                            <h3 className="text-xl font-bold text-white mb-1">{project.name}</h3>
-                                            <p className="text-gray-300 text-sm line-clamp-1">{project.description}</p>
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-5 pointer-events-none">
+                                            <h3 className="text-lg font-bold text-white mb-1">{project.name}</h3>
+                                            <p className="text-gray-300 text-xs line-clamp-2">{project.description}</p>
                                         </div>
                                     </div>
                                 </motion.div>
