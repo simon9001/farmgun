@@ -6,8 +6,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useLoginMutation } from '../features/Api/authApi';
 import { useDispatch } from 'react-redux';
 import { setCredentials } from '../features/Slice/AuthSlice';
-import { motion } from 'framer-motion';
-import { Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Loader2, AlertCircle, X } from 'lucide-react';
 
 const loginSchema = z.object({
     email: z.string().email('Invalid email address'),
@@ -22,6 +22,15 @@ const Login = () => {
 
     const { register, handleSubmit, formState: { errors } } = useForm({
         resolver: zodResolver(loginSchema),
+    });
+
+    const [showExpiryAlert, setShowExpiryAlert] = React.useState(() => {
+        const expired = localStorage.getItem('sessionExpired');
+        if (expired === 'true') {
+            localStorage.removeItem('sessionExpired');
+            return true;
+        }
+        return false;
     });
 
     const from = location.state?.from?.pathname || '/dashboard';
@@ -58,6 +67,33 @@ const Login = () => {
                         Sign in to access your farm dashboard
                     </p>
                 </div>
+
+                <AnimatePresence>
+                    {showExpiryAlert && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3 relative overflow-hidden"
+                        >
+                            <div className="bg-amber-100 p-2 rounded-lg text-amber-600 flex-shrink-0">
+                                <AlertCircle className="w-5 h-5" />
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="text-sm font-bold text-amber-900">Session Expired</h3>
+                                <p className="text-xs text-amber-700 mt-1">
+                                    Your session has timed out for security. Please sign in again.
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setShowExpiryAlert(false)}
+                                className="text-amber-400 hover:text-amber-600 transition-colors"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
                     <div className="-space-y-px rounded-md shadow-sm">
