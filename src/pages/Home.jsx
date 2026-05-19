@@ -43,7 +43,7 @@ const Home = () => {
     const { data: cropsData, isLoading: cropsLoading } = useGetPublicCropsQuery({ featured: true, limit: 12 });
     const { data: projectsData, isLoading: projectsLoading } = useGetPublicProjectsQuery({ featured: true, limit: 12 });
     const { data: testimonialsData, isLoading: testimonialsLoading } = useGetPublicTestimonialsQuery({ featured: true, limit: 3 });
-    const { data: servicesData, isLoading: servicesLoading } = useGetPublicServicesQuery({ featured: true, limit: 12 });
+    const { data: servicesData, isLoading: servicesLoading } = useGetPublicServicesQuery({ featured: true, limit: 100 });
 
     const [selectedItem, setSelectedItem] = useState(null);
     const [detailType, setDetailType] = useState('project');

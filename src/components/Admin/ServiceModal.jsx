@@ -60,10 +60,6 @@ const ServiceModal = ({ isOpen, onClose, serviceToEdit }) => {
                         price: opt.price ? parseFloat(opt.price) : undefined
                     }))
             };
-            // Remove duration if it conflicts differently or map it correctly. 
-            // The schema expects duration_mins, but form has duration. 
-            // In init: duration: 30.
-            // Let's verify backend schema: duration_mins.
 
             if (serviceToEdit) {
                 await updateService({ id: serviceToEdit.id, ...payload }).unwrap();
@@ -142,10 +138,23 @@ const ServiceModal = ({ isOpen, onClose, serviceToEdit }) => {
                                 className="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-xl p-3 focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
                                 required
                             >
-                                <option value={30}>30 Minutes</option>
-                                <option value={60}>1 Hour</option>
-                                <option value={90}>1.5 Hours</option>
-                                <option value={120}>2 Hours</option>
+                                 <optgroup label="Hours">
+    <option value={30}>30 Minutes</option>
+    <option value={60}>1 Hour</option>
+    <option value={90}>1.5 Hours</option>
+    <option value={120}>2 Hours</option>
+    <option value={180}>3 Hours</option>
+    <option value={240}>4 Hours</option>
+    <option value={480}>8 Hours</option>
+  </optgroup>
+
+  <optgroup label="Days">
+    <option value={1440}>1 Day</option>
+    <option value={2880}>2 Days</option>
+    <option value={4320}>3 Days</option>
+    <option value={10080}>1 Week</option>
+  </optgroup>
+                                
                             </select>
                         </div>
                     </div>
