@@ -187,7 +187,7 @@ const Home = () => {
                             <Loader2 className="w-8 h-8 animate-spin text-green-600" />
                         </div>
                     ) : (
-                        <div className="grid grid-rows-2 grid-flow-col gap-6 overflow-x-auto snap-x snap-mandatory pb-6 auto-cols-[100%] md:auto-cols-[calc(33.333%-1rem)] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                             {featuredServices.map((service, index) => (
                                 <motion.div
                                     key={service.id}
@@ -195,7 +195,12 @@ const Home = () => {
                                     whileInView={{ opacity: 1, scale: 1 }}
                                     viewport={{ once: true }}
                                     transition={{ delay: index * 0.1 }}
-                                    className="snap-start group bg-white dark:bg-gray-900 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 flex flex-col h-full"
+                                    className="group bg-white dark:bg-gray-900 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 flex flex-col h-full cursor-pointer"
+                                    onClick={() => {
+                                        setSelectedItem(service);
+                                        setDetailType('service');
+                                        setIsDetailOpen(true);
+                                    }}
                                 >
                                     <div className="h-40 overflow-hidden shrink-0">
                                         {(service.featured_media?.optimized_url || service.featured_media?.url) ? (
@@ -219,6 +224,7 @@ const Home = () => {
                                             </span>
                                             <Link
                                                 to={`/booking?serviceId=${service.id}`}
+                                                onClick={(e) => e.stopPropagation()}
                                                 className="text-green-600 hover:text-green-700 font-medium inline-flex items-center text-sm"
                                             >
                                                 Book <ArrowRight className="w-4 h-4 ml-1" />

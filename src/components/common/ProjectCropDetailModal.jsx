@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, ArrowRight, Tag, Info, Check } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import ImageCarousel from './ImageCarousel';
 
 const ProjectCropDetailModal = ({ isOpen, onClose, data, type }) => {
@@ -10,6 +11,8 @@ const ProjectCropDetailModal = ({ isOpen, onClose, data, type }) => {
         data.featured_media?.optimized_url || data.featured_media?.url,
         ...(type === 'project'
             ? (data.project_media?.map(pm => pm.media?.optimized_url || pm.media?.url) || [])
+            : type === 'service'
+            ? (data.service_crops?.map(sc => sc.featured_media?.optimized_url || sc.featured_media?.url) || [])
             : (data.crop_media?.map(cm => cm.media?.optimized_url || cm.media?.url) || [])
         )
     ].filter(Boolean);
@@ -159,10 +162,14 @@ const ProjectCropDetailModal = ({ isOpen, onClose, data, type }) => {
                     </div>
 
                     <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800">
-                        <button className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-green-200 dark:shadow-none flex items-center justify-center gap-2 group">
+                        <Link
+                            to={type === 'service' ? `/booking?serviceId=${data.id}` : `/booking`}
+                            onClick={onClose}
+                            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-green-200 dark:shadow-none flex items-center justify-center gap-2 group text-center"
+                        >
                             Book Consultation
                             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                        </button>
+                        </Link>
                     </div>
                 </div>
             </motion.div>
