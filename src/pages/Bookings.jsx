@@ -135,7 +135,7 @@ const Bookings = () => {
                                     <option value="">-- Choose a Service --</option>
                                     {servicesData?.services?.map((service) => (
                                         <option key={service.id} value={service.id}>
-                                            {service.name} ({service.duration_mins} mins) - Ksh {service.price}
+                                            {service.name}{service.duration_mins && service.duration_mins > 0 ? ` (${service.duration_mins} mins)` : ''} - Ksh {service.price}
                                         </option>
                                     ))}
                                 </select>

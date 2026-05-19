@@ -199,7 +199,7 @@ const Dashboard = () => {
                                                     </h3>
                                                     <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                                                         <Clock className="w-3 h-3" />
-                                                        {booking.service?.duration_mins} mins • Ksh {booking.service?.price}
+                                                        {booking.service?.duration_mins && booking.service.duration_mins > 0 ? `${booking.service.duration_mins} mins • ` : ''}Ksh {booking.service?.price}
                                                     </p>
                                                 </div>
                                             </div>
