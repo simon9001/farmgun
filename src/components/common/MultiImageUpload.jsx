@@ -56,7 +56,7 @@ const MultiImageUpload = ({ onUploadComplete, initialMedia = [], label = "Media 
 
     // Use useEffect to sync back to parent
     React.useEffect(() => {
-        onUploadComplete(mediaList.map(m => m.id));
+        onUploadComplete(mediaList.map(m => m.id).filter(Boolean));
     }, [mediaList]);
 
     const handleRemove = (id) => {

@@ -30,7 +30,7 @@ const CropModal = ({ isOpen, onClose, cropToEdit }) => {
                 growing_season: cropToEdit.growing_season || '',
                 description: cropToEdit.description || '',
                 featured_media_id: cropToEdit.featured_media_id || '',
-                media_ids: cropToEdit.crop_media?.map(m => m.media?.id) || []
+                media_ids: cropToEdit.crop_media?.map(m => m.media?.id).filter(Boolean) || []
             });
         }
     }, [cropToEdit, isOpen]);
@@ -54,7 +54,7 @@ const CropModal = ({ isOpen, onClose, cropToEdit }) => {
                 setStatus(null);
             }, 1000);
         } catch (err) {
-            setStatus({ success: false, message: 'Operation failed' });
+            setStatus({ success: false, message: err.data?.error || 'Operation failed' });
         }
     };
 
@@ -68,10 +68,10 @@ const CropModal = ({ isOpen, onClose, cropToEdit }) => {
 
     if (!isOpen) return null;
 
-    const initialGallery = cropToEdit?.crop_media?.map(cm => ({
-        id: cm.media?.id,
-        url: cm.media?.url,
-        type: cm.media?.type
+    const initialGallery = cropToEdit?.crop_media?.filter(cm => cm?.media?.id).map(cm => ({
+        id: cm.media.id,
+        url: cm.media.url,
+        type: cm.media.type
     })) || [];
 
     return (
