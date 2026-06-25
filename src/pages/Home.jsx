@@ -7,12 +7,14 @@ import {
     useGetPublicProjectsQuery,
     useGetPublicTestimonialsQuery,
     useGetPublicServicesQuery,
-    useGetPublicTipsQuery
+    useGetPublicTipsQuery,
+    useGetCropPricesQuery,
 } from '../features/Api/publicApi';
 import FloatingTips from '../components/FloatingTips';
 import About from '../components/About';
 import ImageCarousel from '../components/common/ImageCarousel';
 import ProjectCropDetailModal from '../components/common/ProjectCropDetailModal';
+import MarketTicker from '../components/MarketTicker';
 
 import img002 from '../assets/002.jpeg';
 import img003 from '../assets/0003.jpeg';
@@ -50,6 +52,7 @@ const Home = () => {
     const [isDetailOpen, setIsDetailOpen] = useState(false);
 
     const { data: tipsData } = useGetPublicTipsQuery({ limit: 5 });
+    const { data: cropPricesData, isLoading: pricesLoading } = useGetCropPricesQuery({});
     const [forceShowTips, setForceShowTips] = useState(false);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
@@ -66,6 +69,8 @@ const Home = () => {
     const testimonials = testimonialsData?.testimonials || [];
     const featuredServices = servicesData?.services || [];
     const tips = tipsData?.tips || [];
+    const cropPrices = cropPricesData?.prices || [];
+    const priceDate = cropPricesData?.price_date;
 
     return (
         <div className="flex flex-col w-full">
@@ -164,6 +169,13 @@ const Home = () => {
                         </Link>
                     </motion.div>
                 </div>
+
+                {/* Floating Market Ticker — fixed right side, persists across scroll */}
+                <MarketTicker
+                    prices={cropPrices}
+                    priceDate={priceDate}
+                    isLoading={pricesLoading}
+                />
             </section>
 
             {/* About Section */}

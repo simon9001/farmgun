@@ -264,6 +264,27 @@ export const adminApi = apiSlice.injectEndpoints({
                 body: formData,
             }),
         }),
+
+        // Crop Prices
+        getAdminCropPrices: builder.query({
+            query: (params) => ({ url: '/admin/crop-prices', params }),
+            providesTags: ['CropPrices'],
+        }),
+
+        createCropPrice: builder.mutation({
+            query: (body) => ({ url: '/admin/crop-prices', method: 'POST', body }),
+            invalidatesTags: ['CropPrices'],
+        }),
+
+        updateCropPrice: builder.mutation({
+            query: ({ id, ...body }) => ({ url: `/admin/crop-prices/${id}`, method: 'PATCH', body }),
+            invalidatesTags: ['CropPrices'],
+        }),
+
+        deleteCropPrice: builder.mutation({
+            query: (id) => ({ url: `/admin/crop-prices/${id}`, method: 'DELETE' }),
+            invalidatesTags: ['CropPrices'],
+        }),
     }),
 });
 
@@ -300,5 +321,9 @@ export const {
     useLazyExportDataQuery,
     useApproveTestimonialMutation,
     useDeleteTestimonialMutation,
+    useGetAdminCropPricesQuery,
+    useCreateCropPriceMutation,
+    useUpdateCropPriceMutation,
+    useDeleteCropPriceMutation,
 } = adminApi;
 

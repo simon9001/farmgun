@@ -56,6 +56,13 @@ export const publicApi = apiSlice.injectEndpoints({
             }),
             invalidatesTags: ['Dashboard'],
         }),
+        getCropPrices: builder.query({
+            query: (params) => ({
+                url: '/public/crop-prices',
+                params,
+            }),
+            providesTags: ['CropPrices'],
+        }),
     }),
 });
 
@@ -68,6 +75,7 @@ export const {
     useGetPublicBlogsQuery,
     useGetPublicBlogBySlugQuery,
     useCreateTestimonialMutation,
+    useGetCropPricesQuery,
 } = publicApi;
 
 

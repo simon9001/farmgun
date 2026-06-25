@@ -28,7 +28,6 @@ export const baseQueryWithReauth = async (args, api, extraOptions) => {
                 // If we get a 401, it means the token is invalid or expired.
                 // Since the backend doesn't support refresh tokens yet, 
                 // we should just log the user out.
-                localStorage.setItem('sessionExpired', 'true');
                 api.dispatch(logout());
 
                 // We don't need to do anything else here as the protected routes 

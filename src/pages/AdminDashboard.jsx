@@ -5,7 +5,8 @@ import {
     AlertCircle, ChevronDown, LayoutDashboard, Calendar,
     Briefcase, Sprout, FileText, Settings, LogOut,
     MessageSquare, Search, Plus, Filter, MoreVertical,
-    Download, ExternalLink, Trash2, Edit3, Award, Star
+    Download, ExternalLink, Trash2, Edit3, Award, Star,
+    TrendingUp, TrendingDown, DollarSign, X
 } from 'lucide-react';
 
 import { useSelector } from 'react-redux';
@@ -35,6 +36,10 @@ import {
     useLazyExportDataQuery,
     useApproveTestimonialMutation,
     useDeleteTestimonialMutation,
+    useGetAdminCropPricesQuery,
+    useCreateCropPriceMutation,
+    useUpdateCropPriceMutation,
+    useDeleteCropPriceMutation,
 } from '../features/Api/adminApi';
 import {
     useAdminGetAllPartnersQuery,
@@ -78,6 +83,7 @@ const AdminDashboard = () => {
         { id: 'projects', name: 'Our Projects', icon: Briefcase },
         { id: 'partners', name: 'Partners', icon: Award },
         { id: 'testimonials', name: 'Testimonials', icon: MessageSquare },
+        { id: 'crop-prices', name: 'Market Prices', icon: DollarSign },
         { id: 'settings', name: 'System Settings', icon: Settings },
 
     ];
@@ -94,6 +100,7 @@ const AdminDashboard = () => {
             case 'projects': return <ProjectsTab />;
             case 'partners': return <PartnersTab />;
             case 'testimonials': return <TestimonialsTab />;
+            case 'crop-prices': return <CropPricesTab />;
             case 'settings': return <SettingsTab />;
 
             default: return <OverviewTab stats={statsData?.stats} loading={statsLoading} />;
@@ -1548,6 +1555,405 @@ const SettingsTab = () => {
                     </label>
                 </div>
             </div>
+        </div>
+    );
+};
+
+const EMPTY_FORM = {
+    crop_name: '',
+    price_per_unit: '',
+    unit: 'kg',
+    market: '',
+    price_date: new Date().toISOString().split('T')[0],
+    price_change: '',
+    commentary: '',
+    outlook: '',
+};
+
+const CropPricesTab = () => {
+    const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]);
+    const [showForm, setShowForm] = useState(false);
+    const [editingPrice, setEditingPrice] = useState(null);
+    const [form, setForm] = useState(EMPTY_FORM);
+    const [formError, setFormError] = useState('');
+    const [deleteConfirm, setDeleteConfirm] = useState(null);
+
+    const { data, isLoading, isFetching } = useGetAdminCropPricesQuery({ date: filterDate, limit: 200 });
+    const [createCropPrice, { isLoading: isCreating }] = useCreateCropPriceMutation();
+    const [updateCropPrice, { isLoading: isUpdating }] = useUpdateCropPriceMutation();
+    const [deleteCropPrice, { isLoading: isDeleting }] = useDeleteCropPriceMutation();
+
+    const prices = data?.prices || [];
+    const isSaving = isCreating || isUpdating;
+
+    const openCreate = () => {
+        setEditingPrice(null);
+        setForm({ ...EMPTY_FORM, price_date: filterDate });
+        setFormError('');
+        setShowForm(true);
+    };
+
+    const openEdit = (price) => {
+        setEditingPrice(price);
+        setForm({
+            crop_name: price.crop_name,
+            price_per_unit: String(price.price_per_unit),
+            unit: price.unit,
+            market: price.market,
+            price_date: price.price_date,
+            price_change: price.price_change != null ? String(price.price_change) : '',
+            commentary: price.commentary || '',
+            outlook: price.outlook || '',
+        });
+        setFormError('');
+        setShowForm(true);
+    };
+
+    const handleSave = async () => {
+        setFormError('');
+        const priceNum = parseFloat(form.price_per_unit);
+        if (!form.crop_name.trim()) return setFormError('Crop name is required.');
+        if (isNaN(priceNum) || priceNum <= 0) return setFormError('Enter a valid positive price.');
+        if (!form.unit.trim()) return setFormError('Unit is required.');
+        if (!form.market.trim()) return setFormError('Market name is required.');
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(form.price_date)) return setFormError('Date must be YYYY-MM-DD.');
+
+        const payload = {
+            crop_name: form.crop_name.trim(),
+            price_per_unit: priceNum,
+            unit: form.unit.trim(),
+            market: form.market.trim(),
+            price_date: form.price_date,
+            price_change: form.price_change !== '' ? parseFloat(form.price_change) : null,
+            commentary: form.commentary.trim() || null,
+            outlook: form.outlook.trim() || null,
+        };
+
+        try {
+            if (editingPrice) {
+                await updateCropPrice({ id: editingPrice.id, ...payload }).unwrap();
+            } else {
+                await createCropPrice(payload).unwrap();
+            }
+            setShowForm(false);
+        } catch (err) {
+            setFormError(err?.data?.error || 'Failed to save. Please try again.');
+        }
+    };
+
+    const handleDelete = async (id) => {
+        try {
+            await deleteCropPrice(id).unwrap();
+            setDeleteConfirm(null);
+        } catch {
+            /* ignore — RTK will show error */
+        }
+    };
+
+    return (
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">Market Prices</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Post and manage daily crop prices shown on the homepage.</p>
+                </div>
+                <button
+                    onClick={openCreate}
+                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-colors shrink-0"
+                >
+                    <Plus className="w-4 h-4" /> Add Price
+                </button>
+            </div>
+
+            {/* Date Filter */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 flex flex-wrap items-center gap-4">
+                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 shrink-0">Filter by date:</label>
+                <input
+                    type="date"
+                    value={filterDate}
+                    onChange={e => setFilterDate(e.target.value)}
+                    className="border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+                <span className="text-xs text-gray-400">{prices.length} entr{prices.length === 1 ? 'y' : 'ies'} found</span>
+                {isFetching && <Loader2 className="w-4 h-4 animate-spin text-green-500" />}
+            </div>
+
+            {/* Table */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+                {isLoading ? (
+                    <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-green-500" /></div>
+                ) : prices.length === 0 ? (
+                    <div className="text-center py-16 text-gray-400 dark:text-gray-500">
+                        <DollarSign className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                        <p className="font-medium">No prices for this date.</p>
+                        <p className="text-sm mt-1">Click "Add Price" to post today's prices.</p>
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+                                    {['Crop', 'Price', 'Unit', 'Market', 'Change', 'Date', 'Actions'].map(h => (
+                                        <th key={h} className="text-left px-5 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
+                                {prices.map(price => {
+                                    const change = price.price_change;
+                                    const isUp = change !== null && change !== undefined && change > 0;
+                                    const isDown = change !== null && change !== undefined && change < 0;
+                                    return (
+                                        <tr key={price.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                                            <td className="px-5 py-3.5 font-semibold text-gray-900 dark:text-white">{price.crop_name}</td>
+                                            <td className="px-5 py-3.5 font-bold text-green-600 dark:text-green-400">KES {Number(price.price_per_unit).toLocaleString()}</td>
+                                            <td className="px-5 py-3.5 text-gray-600 dark:text-gray-400">{price.unit}</td>
+                                            <td className="px-5 py-3.5 text-gray-600 dark:text-gray-400 max-w-[140px] truncate">{price.market}</td>
+                                            <td className="px-5 py-3.5">
+                                                {change !== null && change !== undefined ? (
+                                                    <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full ${isUp ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : isDown ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}`}>
+                                                        {isUp ? <TrendingUp className="w-3 h-3" /> : isDown ? <TrendingDown className="w-3 h-3" /> : null}
+                                                        {isUp ? '+' : ''}{Number(change).toFixed(1)}%
+                                                    </span>
+                                                ) : <span className="text-gray-300 dark:text-gray-600">—</span>}
+                                            </td>
+                                            <td className="px-5 py-3.5 text-gray-500 dark:text-gray-400 text-xs">{price.price_date}</td>
+                                            <td className="px-5 py-3.5">
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => openEdit(price)}
+                                                        className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
+                                                        title="Edit"
+                                                    >
+                                                        <Edit3 className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setDeleteConfirm(price.id)}
+                                                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                                        title="Delete"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
+
+            {/* Commentary preview */}
+            {prices.length > 0 && (prices[0]?.commentary || prices[0]?.outlook) && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {prices[0]?.commentary && (
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-5">
+                            <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Market Analysis (public)</h4>
+                            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{prices[0].commentary}</p>
+                        </div>
+                    )}
+                    {prices[0]?.outlook && (
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-5">
+                            <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Outlook (public)</h4>
+                            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{prices[0].outlook}</p>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Add / Edit Form Modal */}
+            <AnimatePresence>
+                {showForm && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                        onClick={e => { if (e.target === e.currentTarget) setShowForm(false); }}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+                        >
+                            <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700">
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                                    {editingPrice ? 'Edit Price Entry' : 'Add Price Entry'}
+                                </h3>
+                                <button onClick={() => setShowForm(false)} className="p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl">
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <div className="p-6 space-y-4">
+                                {/* Row 1: crop + date */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Crop Name *</label>
+                                        <input
+                                            value={form.crop_name}
+                                            onChange={e => setForm({ ...form, crop_name: e.target.value })}
+                                            placeholder="e.g. Tomatoes"
+                                            className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Date *</label>
+                                        <input
+                                            type="date"
+                                            value={form.price_date}
+                                            onChange={e => setForm({ ...form, price_date: e.target.value })}
+                                            className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Row 2: price + unit */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Price (KES) *</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            value={form.price_per_unit}
+                                            onChange={e => setForm({ ...form, price_per_unit: e.target.value })}
+                                            placeholder="e.g. 120"
+                                            className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Unit *</label>
+                                        <input
+                                            value={form.unit}
+                                            onChange={e => setForm({ ...form, unit: e.target.value })}
+                                            placeholder="kg / bag / crate"
+                                            className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Row 3: market + price change */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Market *</label>
+                                        <input
+                                            value={form.market}
+                                            onChange={e => setForm({ ...form, market: e.target.value })}
+                                            placeholder="e.g. Wakulima Market"
+                                            className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">% Change (optional)</label>
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            value={form.price_change}
+                                            onChange={e => setForm({ ...form, price_change: e.target.value })}
+                                            placeholder="+5.2 or -3.1"
+                                            className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Commentary */}
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                                        Market Analysis <span className="text-gray-400 normal-case font-normal">(shown publicly — explain what caused today's prices)</span>
+                                    </label>
+                                    <textarea
+                                        rows={4}
+                                        value={form.commentary}
+                                        onChange={e => setForm({ ...form, commentary: e.target.value })}
+                                        placeholder="e.g. Heavy rains in Rift Valley reduced supply of cabbages pushing prices up. Maize prices are stable due to good harvest from last season..."
+                                        className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+                                    />
+                                </div>
+
+                                {/* Outlook */}
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                                        What to Expect <span className="text-gray-400 normal-case font-normal">(outlook for next week)</span>
+                                    </label>
+                                    <textarea
+                                        rows={3}
+                                        value={form.outlook}
+                                        onChange={e => setForm({ ...form, outlook: e.target.value })}
+                                        placeholder="e.g. Tomato prices expected to ease next week as supply recovers. Bean prices may rise due to increased demand ahead of the festive season..."
+                                        className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+                                    />
+                                </div>
+
+                                {formError && (
+                                    <div className="p-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-xl text-sm">
+                                        {formError}
+                                    </div>
+                                )}
+
+                                <div className="flex gap-3 pt-2">
+                                    <button
+                                        onClick={() => setShowForm(false)}
+                                        className="flex-1 py-2.5 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={handleSave}
+                                        disabled={isSaving}
+                                        className="flex-1 py-2.5 bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+                                        {editingPrice ? 'Save Changes' : 'Add Price'}
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Delete Confirmation */}
+            <AnimatePresence>
+                {deleteConfirm && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95 }}
+                            animate={{ scale: 1 }}
+                            exit={{ scale: 0.95 }}
+                            className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 max-w-sm w-full"
+                        >
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Delete Price Entry?</h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">This will permanently remove this price from the homepage. This action cannot be undone.</p>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setDeleteConfirm(null)}
+                                    className="flex-1 py-2.5 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => handleDelete(deleteConfirm)}
+                                    disabled={isDeleting}
+                                    className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+                                >
+                                    {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
+                                    Delete
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
