@@ -1,118 +1,92 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Calendar } from 'lucide-react';
 import { useGetPublicProjectsQuery } from '../features/Api/publicApi';
-import ImageCarousel from '../components/common/ImageCarousel';
 import ProjectCropDetailModal from '../components/common/ProjectCropDetailModal';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Search, Calendar, MapPin, Loader2 } from 'lucide-react';
+import { PageHeader, LoadingState, ErrorState, EmptyState, Thumb } from '../components/common/Page';
 
 const Projects = () => {
-    const { data: projectsData, isLoading, error } = useGetPublicProjectsQuery();
-    const [searchTerm, setSearchTerm] = useState('');
+    const { data, isLoading, error } = useGetPublicProjectsQuery();
     const [selectedProject, setSelectedProject] = useState(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-    if (isLoading) {
-        return (
-            <div className="flex justify-center items-center min-h-[50vh]">
-                <Loader2 className="w-8 h-8 animate-spin text-green-600" />
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="flex justify-center items-center min-h-[50vh] text-red-500">
-                Failed to load projects. Please try again later.
-            </div>
-        );
-    }
-
-    const projects = projectsData?.projects || [];
+    const projects = data?.projects || [];
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-center mb-12"
-            >
-                <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Our Projects</h1>
-                <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                    Take a look at some of the farming success stories and implementations we've delivered.
-                </p>
-            </motion.div>
+        <>
+            <PageHeader
+                title="Field work"
+                lead="Farms we have planned, planted and seen through to harvest. Open a project to see the crop, the approach and how it finished."
+                action={<Link to="/booking" className="btn btn-primary">Book a consultation</Link>}
+            />
 
-            <section>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {projects.map((project, index) => (
-                        <motion.div
-                            key={project.id}
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: index * 0.1 }}
-                            className="bg-white dark:bg-gray-800 rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all border border-gray-100 dark:border-gray-700 group cursor-pointer"
-                            onClick={() => {
-                                setSelectedProject(project);
-                                setIsDetailOpen(true);
-                            }}
-                        >
-                            <div className="h-64 relative">
-                                <ImageCarousel
-                                    images={[
-                                        project.featured_media?.optimized_url || project.featured_media?.url,
-                                        ...(project.project_media?.map(pm => pm.media?.optimized_url || pm.media?.url) || [])
-                                    ].filter(Boolean)}
-                                />
-                                <div className="absolute top-4 left-4">
-                                    <span className="bg-green-500/90 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest backdrop-blur-sm">
-                                        {project.status || 'Active'}
-                                    </span>
+            <div className="shell py-12 sm:py-16">
+                {isLoading ? (
+                    <LoadingState label="Loading projects" />
+                ) : error ? (
+                    <ErrorState what="the project list" />
+                ) : projects.length === 0 ? (
+                    <EmptyState message="No projects are published yet." />
+                ) : (
+                    <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                        {projects.map((project) => (
+                            <li
+                                key={project.id}
+                                className="panel overflow-hidden flex flex-col relative hover:border-field transition-colors"
+                            >
+                                <div className="h-56 bg-husk overflow-hidden relative">
+                                    <Thumb
+                                        src={project.featured_media?.optimized_url || project.featured_media?.url}
+                                        alt={project.name}
+                                    />
+                                    {project.status && (
+                                        <span className="absolute top-3 left-3 bg-white/95 text-ink text-xs font-medium px-2.5 py-1 rounded">
+                                            {project.status}
+                                        </span>
+                                    )}
                                 </div>
-                            </div>
 
-                            <div className="p-8">
-                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3 group-hover:text-green-600 transition-colors">
-                                    {project.name}
-                                </h3>
+                                <div className="p-6 flex flex-col flex-1">
+                                    <h2 className="t-h3">
+                                        <button
+                                            type="button"
+                                            onClick={() => { setSelectedProject(project); setIsDetailOpen(true); }}
+                                            className="text-left after:absolute after:inset-0 after:content-['']"
+                                        >
+                                            {project.name}
+                                        </button>
+                                    </h2>
 
-                                <p className="text-gray-600 dark:text-gray-400 mb-6 line-clamp-2 leading-relaxed">
-                                    {project.description}
-                                </p>
+                                    <p className="mt-2 text-[0.9375rem] text-quiet leading-relaxed line-clamp-3 flex-1">
+                                        {project.description}
+                                    </p>
 
-                                <div className="flex items-center justify-between pt-6 border-t border-gray-50 dark:border-gray-700">
-                                    <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                                        <Calendar className="w-4 h-4 mr-2 text-green-500" />
-                                        <span>{project.start_date ? new Date(project.start_date).toLocaleDateString() : 'Active Project'}</span>
-                                    </div>
-                                    <div className="text-green-600 font-bold flex items-center group-hover:translate-x-1 transition-transform">
-                                        View Case <ArrowRight className="w-4 h-4 ml-1" />
-                                    </div>
+                                    {project.start_date && (
+                                        <p className="mt-5 pt-5 border-t border-rule flex items-center gap-2 text-sm text-quiet">
+                                            <Calendar className="w-4 h-4 shrink-0" aria-hidden="true" />
+                                            <time dateTime={project.start_date}>
+                                                {new Date(project.start_date).toLocaleDateString('en-KE', {
+                                                    month: 'long', year: 'numeric',
+                                                })}
+                                            </time>
+                                        </p>
+                                    )}
                                 </div>
-                            </div>
-                        </motion.div>
-                    ))}
-                </div>
-            </section>
-
-            {projects.length === 0 && (
-                <div className="text-center py-20 text-gray-500">
-                    No projects found at the moment.
-                </div>
-            )}
-
-            {/* Detail Modal */}
-            <AnimatePresence>
-                {isDetailOpen && (
-                    <ProjectCropDetailModal
-                        isOpen={isDetailOpen}
-                        onClose={() => setIsDetailOpen(false)}
-                        data={selectedProject}
-                        type="project"
-                    />
+                            </li>
+                        ))}
+                    </ul>
                 )}
-            </AnimatePresence>
-        </div>
+            </div>
+
+            {isDetailOpen && (
+                <ProjectCropDetailModal
+                    isOpen={isDetailOpen}
+                    onClose={() => setIsDetailOpen(false)}
+                    data={selectedProject}
+                    type="project"
+                />
+            )}
+        </>
     );
 };
 

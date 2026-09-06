@@ -1,0 +1,17 @@
+{
+  "name": "Farm with Irene",
+  "short_name": "Farm with Irene",
+  "description": "Onion and garlic farming consultancy in Kenya.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f1f3ee",
+  "theme_color": "#1f4d33",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "231x231",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

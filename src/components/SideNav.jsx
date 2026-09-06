@@ -1,85 +1,22 @@
-import { useEffect, useCallback, memo, useMemo } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useCallback, memo, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  ShieldCheck,
-  User,
-  LayoutDashboard,
-  Sprout,
-  Mail,
-  X,
-  Home,
-  LogIn,
-  LogOut,
-  Award,
-  FileText
+  ShieldCheck, User, LayoutDashboard, Sprout, Mail, X, Home,
+  LogIn, LogOut, Award, FileText, Leaf, Briefcase, CalendarCheck
 } from "lucide-react";
-
 import { Link, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from 'react-redux';
 import { selectIsAuthenticated, selectCurrentUser, logout } from '../features/Slice/AuthSlice';
 import { apiSlice } from '../features/Api/apiSlice';
 import { useLogoutMutation } from '../features/Api/authApi';
+import { SITE } from '../config/site';
 
-// Animation variants
-const navVariants = {
-  closed: {
-    x: "100%",
-    opacity: 0.5,
-    transition: {
-      type: "spring",
-      stiffness: 250,
-      damping: 30,
-      mass: 0.8,
-      when: "afterChildren",
-    },
-  },
-  open: {
-    x: "0%",
-    opacity: 1,
-    transition: {
-      type: "spring",
-      stiffness: 250,
-      damping: 30,
-      mass: 0.8,
-      staggerChildren: 0.07,
-      delayChildren: 0.1,
-    },
-  },
-};
-
-const itemVariants = {
-  closed: { y: 20, opacity: 0 },
-  open: { y: 0, opacity: 1 },
-};
-
-const overlayVariants = {
-  hidden: { opacity: 0, pointerEvents: "none" },
-  visible: { opacity: 0.4, pointerEvents: "auto" },
-};
-
-// Memoized nav item component
-const NavItem = memo(({ link, onNavClick, isActive }) => {
-  const Icon = link.icon;
-  return (
-    <motion.li variants={itemVariants} className="w-full">
-      <Link
-        to={link.to}
-        onClick={onNavClick}
-        className={`flex flex-row items-center justify-start gap-4 text-lg font-medium transition-colors duration-200 py-2 w-full
-          ${isActive ? "text-green-600 bg-green-50 dark:bg-green-900/20" : "text-gray-700 dark:text-gray-300 hover:text-green-600"}
-        `}
-      >
-        <Icon className="w-5 h-5 flex-shrink-0" />
-        <span className="leading-none">{link.text}</span>
-      </Link>
-    </motion.li>
-  );
-});
-NavItem.displayName = "NavItem";
+const panelTransition = { type: "tween", ease: [0.22, 0.61, 0.36, 1], duration: 0.28 };
 
 const SideNav = memo(({ open, onClose }) => {
   const location = useLocation();
   const dispatch = useDispatch();
+  const panelRef = useRef(null);
   const [logoutMutation] = useLogoutMutation();
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const user = useSelector(selectCurrentUser);
@@ -96,139 +33,136 @@ const SideNav = memo(({ open, onClose }) => {
     }
   }, [dispatch, logoutMutation, onClose]);
 
-  // Memoize event handlers
-  const handleKeyDown = useCallback((e) => {
-    if (e.key === "Escape") onClose();
-  }, [onClose]);
-
-  const handleClickOutside = useCallback((e) => {
-    if (!e.target.closest(".side-nav-panel") && !e.target.closest(".hamburger")) {
-      onClose();
-    }
-  }, [onClose]);
-
+  // Close on Escape, lock the page behind the panel, and move focus in.
   useEffect(() => {
     if (!open) return;
+    const onKeyDown = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKeyDown);
 
-    document.addEventListener("keydown", handleKeyDown);
-    document.addEventListener("mousedown", handleClickOutside);
+    const scrollbar = window.innerWidth - document.documentElement.clientWidth;
+    const prevOverflow = document.body.style.overflow;
+    const prevPad = document.body.style.paddingRight;
     document.body.style.overflow = "hidden";
+    if (scrollbar > 0) document.body.style.paddingRight = `${scrollbar}px`;
+
+    panelRef.current?.focus();
 
     return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.body.style.overflow = "";
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = prevOverflow;
+      document.body.style.paddingRight = prevPad;
     };
-  }, [open, handleKeyDown, handleClickOutside]);
+  }, [open, onClose]);
 
-  // Dynamic nav links
-  const navItems = useMemo(() => {
-    const links = [
-      { to: "/", icon: Home, text: "Home" },
-      { to: "/about", icon: User, text: "About" },
-      { to: "/partners", icon: Award, text: "Partners" },
-      { to: "/crops", icon: Sprout, text: "Our Crops" },
-      { to: "/blogs", icon: FileText, text: "Blogs" },
-      { to: "/contact", icon: Mail, text: "Contact" },
-
-      ...(isAuthenticated ? [
-        ...(user?.role === 'admin'
-          ? [{ to: "/admin", icon: ShieldCheck, text: "Admin Panel" }]
-          : [{ to: "/dashboard", icon: LayoutDashboard, text: "Dashboard" }]
-        ),
-        { to: "/services", icon: Sprout, text: "Services" }
-      ] : [])
-    ];
-
-    return links.map((link) => (
-      <NavItem
-        key={link.to}
-        link={link}
-        onNavClick={onClose}
-        isActive={location.pathname === link.to}
-      />
-    ));
-  }, [onClose, location.pathname, isAuthenticated]);
+  const links = [
+    { to: "/", icon: Home, text: "Home" },
+    { to: "/services", icon: Briefcase, text: "Services" },
+    { to: "/crops", icon: Sprout, text: "Crops" },
+    { to: "/projects", icon: Leaf, text: "Field work" },
+    { to: "/blogs", icon: FileText, text: "Guides" },
+    { to: "/partners", icon: Award, text: "Partners" },
+    { to: "/about", icon: User, text: "About" },
+    { to: "/contact", icon: Mail, text: "Contact" },
+    ...(isAuthenticated
+      ? [user?.role === 'admin'
+        ? { to: "/admin", icon: ShieldCheck, text: "Admin panel" }
+        : { to: "/dashboard", icon: LayoutDashboard, text: "Dashboard" }]
+      : []),
+  ];
 
   return (
-    <>
-      {/* Overlay */}
-      <motion.div
-        initial={false}
-        animate={open ? "visible" : "hidden"}
-        variants={overlayVariants}
-        transition={{ duration: 0.3 }}
-        className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm"
-        onClick={onClose}
-      />
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-ink/45 z-50 lg:hidden"
+            onClick={onClose}
+            aria-hidden="true"
+          />
 
-      {/* Navigation Panel */}
-      <motion.nav
-        initial={false}
-        animate={open ? "open" : "closed"}
-        variants={navVariants}
-        className="side-nav-panel fixed top-0 right-0 w-[85vw] max-w-[300px] h-[100dvh] bg-white dark:bg-gray-900 shadow-2xl z-50 flex flex-col p-6 pt-8 border-l border-green-100 dark:border-green-900 overflow-hidden"
-        aria-label="Main Navigation"
-      >
-        {/* Close Button */}
-        <motion.button
-          variants={itemVariants}
-          className="self-end text-gray-500 hover:text-green-600 transition-all duration-300 hover:rotate-90 cursor-pointer p-2 -mr-2 mb-8"
-          aria-label="Close Menu"
-          type="button"
-          onClick={onClose}
-        >
-          <X className="w-7 h-7" />
-        </motion.button>
-
-        {/* Navigation Links */}
-        <ul className="flex-1 space-y-6 overflow-y-auto pr-2 -mr-2 no-scrollbar">
-          {navItems}
-        </ul>
-
-        {/* Auth Buttons Footer */}
-        <motion.div variants={itemVariants} className="mt-auto border-t border-gray-100 dark:border-gray-800 pt-6 flex-shrink-0 pb-4">
-          {isAuthenticated ? (
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-3 px-2">
-                <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center text-green-700 font-bold">
-                  {user?.name?.charAt(0).toUpperCase() || 'U'}
-                </div>
-                <div className="flex flex-col">
-                  <span className="font-medium text-gray-900 dark:text-white">{user?.name}</span>
-                  <span className="text-xs text-gray-500 truncate max-w-[150px]">{user?.email}</span>
-                </div>
-              </div>
+          <motion.nav
+            ref={panelRef}
+            tabIndex={-1}
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={panelTransition}
+            className="fixed top-0 right-0 w-[86vw] max-w-[330px] h-[100dvh] bg-white z-50 flex flex-col border-l border-rule lg:hidden outline-none"
+            aria-label="Main navigation"
+          >
+            <div className="flex items-center justify-between px-5 h-[4.5rem] border-b border-rule shrink-0">
+              <span className="flex items-center gap-2.5 min-w-0">
+                <img src={SITE.logo} alt="" width="32" height="32" className="w-8 h-8 shrink-0" />
+                <span className="font-display text-lg font-semibold text-field truncate">{SITE.name}</span>
+              </span>
               <button
-                onClick={handleLogout}
-                className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg bg-red-50 text-red-600 font-medium hover:bg-red-100 transition-colors"
+                onClick={onClose}
+                aria-label="Close menu"
+                className="p-2 -mr-2 text-quiet hover:text-ink transition-colors"
               >
-                <LogOut className="w-4 h-4" />
-                Logout
+                <X className="w-6 h-6" />
               </button>
             </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              <Link
-                to="/login"
-                onClick={onClose}
-                className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg bg-green-600 text-white font-medium hover:bg-green-700 transition-colors shadow-sm"
-              >
-                <LogIn className="w-4 h-4" />
-                Sign In
+
+            <ul className="flex-1 overflow-y-auto no-scrollbar py-2">
+              {links.map(({ to, icon: Icon, text }) => {
+                const isActive = location.pathname === to;
+                return (
+                  <li key={to}>
+                    <Link
+                      to={to}
+                      onClick={onClose}
+                      aria-current={isActive ? "page" : undefined}
+                      className={`flex items-center gap-3.5 px-5 py-3 transition-colors
+                        ${isActive
+                          ? "text-ink font-medium bg-husk border-l-2 border-bulb pl-[1.125rem]"
+                          : "text-quiet hover:text-field hover:bg-husk"}`}
+                    >
+                      <Icon className="w-[1.125rem] h-[1.125rem] shrink-0" />
+                      <span>{text}</span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+
+            <div className="border-t border-rule p-5 shrink-0 space-y-3">
+              <Link to="/booking" onClick={onClose} className="btn btn-primary btn-block">
+                <CalendarCheck className="w-4 h-4" />
+                Book a consultation
               </Link>
-              <Link
-                to="/register"
-                onClick={onClose}
-                className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg border border-green-200 text-green-700 font-medium hover:bg-green-50 transition-colors dark:border-green-800 dark:text-green-400"
-              >
-                Create Account
-              </Link>
+
+              {isAuthenticated ? (
+                <>
+                  <div className="flex items-center gap-3 pt-1">
+                    <span className="w-9 h-9 rounded-full bg-field-tint flex items-center justify-center text-field font-semibold text-sm shrink-0">
+                      {user?.name?.charAt(0).toUpperCase() || 'U'}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{user?.name}</p>
+                      <p className="text-xs text-quiet truncate">{user?.email}</p>
+                    </div>
+                  </div>
+                  <button onClick={handleLogout} className="btn btn-outline btn-block text-bulb">
+                    <LogOut className="w-4 h-4" />
+                    Sign out
+                  </button>
+                </>
+              ) : (
+                <Link to="/login" onClick={onClose} className="btn btn-outline btn-block">
+                  <LogIn className="w-4 h-4" />
+                  Sign in
+                </Link>
+              )}
             </div>
-          )}
-        </motion.div>
-      </motion.nav>
-    </>
+          </motion.nav>
+        </>
+      )}
+    </AnimatePresence>
   );
 });
 

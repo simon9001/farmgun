@@ -5,7 +5,6 @@ import App from './App.jsx'
 import { Provider } from 'react-redux'
 import { PersistGate } from 'redux-persist/integration/react'
 import { store, persistor } from './store/store'
-import "@fortawesome/fontawesome-free/css/all.min.css";
 import { initKeepAlive } from './utils/keepAlive'
 
 // Initialize keep-alive mechanism for backend

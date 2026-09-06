@@ -1,264 +1,86 @@
-import React, { useState, useEffect, useCallback, memo } from "react";
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
+import React, { Suspense, lazy, useState } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Analytics } from "@vercel/analytics/react";
+import { Loader2 } from "lucide-react";
 
-// Import components
 import Layout from './components/Layout';
 import ScrollToTop from './components/ScrollToTop';
-import Services from './pages/Services';
-import Bookings from './pages/Bookings';
-import Projects from './pages/Projects';
-import Testimonials from './pages/Testimonials';
-import Partners from './pages/Partners';
-import Crops from './pages/Crops';
-import Blogs from './pages/Blogs';
-import PartnerApply from './pages/PartnerApply';
 import UserRoute from './components/auth/UserRoute';
 import GuestRoute from './components/auth/GuestRoute';
 import AdminRoute from './components/auth/AdminRoute';
 
-// Import pages
+// Eager: everything a first-time visitor is likely to see.
 import Home from "./pages/Home";
 import About from "./components/About";
 import Contact from "./components/Contact";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import AdminDashboard from "./pages/AdminDashboard";
-import Dashboard from "./pages/Dashboard";
-import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
-import PaymentCallback from "./pages/PaymentCallback";
-import Profile from "./pages/Profile";
+import Services from './pages/Services';
+import Crops from './pages/Crops';
+import Projects from './pages/Projects';
+import Testimonials from './pages/Testimonials';
+import Partners from './pages/Partners';
 
+// Lazy: signed-in and admin surfaces. Keeping the 2,000-line admin panel out of
+// the first-load bundle is the single biggest win for how fast the site feels.
+const Blogs = lazy(() => import('./pages/Blogs'));
+const Bookings = lazy(() => import('./pages/Bookings'));
+const PartnerApply = lazy(() => import('./pages/PartnerApply'));
+const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() => import("./pages/Register"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const PaymentCallback = lazy(() => import("./pages/PaymentCallback"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 
-
-
-// --- NEW AWESOME BACKGROUND ---
-export const StaticBackground = memo(({ theme }) => {
-  const lightStyles = {
-    backgroundColor: 'hsl(140, 60%, 98%)', // Very light green tint
-    backgroundImage: `
-      radial-gradient(ellipse at 10% 10%, hsla(140, 70%, 94%, 0.5), transparent),
-      radial-gradient(ellipse at 90% 90%, hsla(160, 70%, 94%, 0.5), transparent),
-      linear-gradient(hsl(140, 40%, 96%) 1px, transparent 1px),
-      linear-gradient(to right, hsl(140, 40%, 96%) 1px, hsl(140, 60%, 98%) 1px)
-    `,
-    backgroundSize: '40px 40px',
-  };
-
-  const darkStyles = {
-    backgroundColor: 'hsl(222, 47%, 11%)', // Deep dark blue/gray
-    backgroundImage: `
-      radial-gradient(ellipse at 10% 10%, hsla(140, 50%, 15%, 0.2), transparent),
-      radial-gradient(ellipse at 90% 90%, hsla(160, 50%, 20%, 0.2), transparent),
-      linear-gradient(hsla(222, 47%, 13%, 1) 1px, transparent 1px),
-      linear-gradient(to right, hsla(222, 47%, 13%, 1) 1px, hsl(222, 47%, 11%) 1px)
-    `,
-    backgroundSize: '40px 40px',
-  };
-
-  const styles = theme === 'light' ? lightStyles : darkStyles;
-
-  return (
-    <div
-      className="fixed inset-0 -z-50 pointer-events-none transition-colors duration-500"
-      style={styles}
-    />
-  );
-});
-StaticBackground.displayName = "StaticBackground";
-
-// --- ANIMATION LOGIC ---
-const pageVariants = { initial: { opacity: 0, y: 10 }, in: { opacity: 1, y: 0 }, out: { opacity: 0, y: -10 } };
-const pageTransition = { type: "tween", ease: "easeOut", duration: 0.3 };
-
-// Memoize the routes
-const AnimatedRoutes = memo(() => {
-  const location = useLocation();
-
-  return (
-    <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
-        <Route path="/" element={
-          <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
-            <Home />
-          </motion.div>
-        } />
-        <Route path="/about" element={
-          <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
-            <About />
-          </motion.div>
-        } />
-        <Route path="/contact" element={
-          <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
-            <Contact />
-          </motion.div>
-        } />
-        <Route path="/login" element={
-          <GuestRoute>
-            <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
-              <Login />
-            </motion.div>
-          </GuestRoute>
-        } />
-        <Route path="/register" element={
-          <GuestRoute>
-            <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
-              <Register />
-            </motion.div>
-          </GuestRoute>
-        } />
-        <Route path="/forgot-password" element={
-          <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
-            <ForgotPassword />
-          </motion.div>
-        } />
-        <Route path="/reset-password" element={
-          <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
-            <ResetPassword />
-          </motion.div>
-        } />
-        <Route path="/payment-callback" element={
-          <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
-            <PaymentCallback />
-          </motion.div>
-        } />
-
-
-
-        {/* Protected Routes */}
-        <Route
-          path="/dashboard"
-          element={
-            <UserRoute>
-              <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
-                <Dashboard />
-              </motion.div>
-            </UserRoute>
-          }
-        />
-        <Route
-          path="/services"
-          element={
-            <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
-              <Services />
-            </motion.div>
-          }
-        />
-        <Route
-          path="/crops"
-          element={
-            <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
-              <Crops />
-            </motion.div>
-          }
-        />
-        <Route
-          path="/booking"
-          element={
-            <UserRoute>
-              <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
-                <Bookings />
-              </motion.div>
-            </UserRoute>
-          }
-        />
-
-        <Route
-          path="/blogs"
-          element={
-            <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
-              <Blogs />
-            </motion.div>
-          }
-        />
-        <Route
-          path="/projects"
-          element={
-            <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
-              <Projects />
-            </motion.div>
-          }
-        />
-        <Route
-          path="/testimonials"
-          element={
-            <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
-              <Testimonials />
-            </motion.div>
-          }
-        />
-        <Route
-          path="/partners"
-          element={
-            <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
-              <Partners />
-            </motion.div>
-          } />
-        <Route
-          path="/partners/apply"
-          element={
-            <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
-              <PartnerApply />
-            </motion.div>
-          }
-        />
-        <Route
-          path="/admin"
-          element={
-            <AdminRoute>
-              <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
-                <AdminDashboard />
-              </motion.div>
-            </AdminRoute>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <UserRoute>
-              <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
-                <Profile />
-              </motion.div>
-            </UserRoute>
-          }
-        />
-      </Routes>
-    </AnimatePresence>
-  );
-});
-AnimatedRoutes.displayName = 'AnimatedRoutes';
-
+const RouteFallback = () => (
+  <div className="flex items-center justify-center min-h-[60vh]" role="status" aria-label="Loading">
+    <Loader2 className="w-6 h-6 animate-spin text-field" />
+  </div>
+);
 
 function App() {
-  const [theme, setTheme] = useState(() => {
-    const storedTheme = localStorage.getItem("theme");
-    if (storedTheme) return storedTheme;
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-  });
   const [sideNavOpen, setSideNavOpen] = useState(false);
-
-  useEffect(() => {
-    document.documentElement.classList.remove("light", "dark");
-    document.documentElement.classList.add(theme);
-    localStorage.setItem("theme", theme);
-  }, [theme]);
-
-  const toggleTheme = useCallback(() => {
-    setTheme((prev) => (prev === "light" ? "dark" : "light"));
-  }, []);
 
   return (
     <Router>
       <ScrollToTop />
-      <Layout
-        theme={theme}
-        toggleTheme={toggleTheme}
-        sideNavOpen={sideNavOpen}
-        setSideNavOpen={setSideNavOpen}
-      >
-        <AnimatedRoutes />
+      <Layout sideNavOpen={sideNavOpen} setSideNavOpen={setSideNavOpen}>
+        <Suspense fallback={<RouteFallback />}>
+          <Routes>
+            {/* Public */}
+            <Route path="/" element={<Home />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/services" element={<Services />} />
+            <Route path="/crops" element={<Crops />} />
+            <Route path="/projects" element={<Projects />} />
+            <Route path="/testimonials" element={<Testimonials />} />
+            <Route path="/partners" element={<Partners />} />
+            <Route path="/partners/apply" element={<PartnerApply />} />
+            <Route path="/blogs" element={<Blogs />} />
+
+            {/* Public on purpose: a visitor can choose a service, pick a date and see
+                real availability before being asked to create an account. The sign-in
+                prompt happens at submit, with their selection preserved. */}
+            <Route path="/booking" element={<Bookings />} />
+
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/payment-callback" element={<PaymentCallback />} />
+
+            {/* Guest only */}
+            <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
+            <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
+
+            {/* Signed in */}
+            <Route path="/dashboard" element={<UserRoute><Dashboard /></UserRoute>} />
+            <Route path="/profile" element={<UserRoute><Profile /></UserRoute>} />
+
+            {/* Admin */}
+            <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+          </Routes>
+        </Suspense>
       </Layout>
       <Analytics />
     </Router>

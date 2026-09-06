@@ -1,144 +1,110 @@
 import React from 'react';
-import { Loader2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useRegisterMutation } from '../features/Api/authApi';
 import { useDispatch } from 'react-redux';
 import { setCredentials } from '../features/Slice/AuthSlice';
-import { motion } from 'framer-motion';
+import { Loader2, AlertCircle } from 'lucide-react';
 
 const registerSchema = z.object({
-    name: z.string().min(2, 'Name is required'),
-    email: z.string().email('Invalid email address'),
-    phone: z.string().min(10, 'Valid phone number is required'),
-    password: z.string().min(6, 'Password at least 6 characters'),
+    name: z.string().min(2, 'Enter your name'),
+    email: z.string().email('Enter a valid email address'),
+    phone: z.string().regex(/^(?:254|\+254|0)?(7|1)\d{8}$/, 'Enter a valid Kenyan phone number, e.g. 0712345678'),
+    password: z.string().min(6, 'Use at least 6 characters'),
     role: z.enum(['client', 'agent', 'admin']).default('client'),
 });
 
 const Register = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const dispatch = useDispatch();
     const [registerUser, { isLoading, error }] = useRegisterMutation();
 
     const { register, handleSubmit, formState: { errors } } = useForm({
         resolver: zodResolver(registerSchema),
-        defaultValues: {
-            role: 'client'
-        }
+        defaultValues: { role: 'client' },
     });
+
+    const from = location.state?.from?.pathname;
 
     const onSubmit = async (data) => {
         try {
             const result = await registerUser(data).unwrap();
             dispatch(setCredentials({ ...result, isAuthenticated: true }));
-
-            // Redirect based on role
-            if (result.user?.role === 'admin') {
-                navigate('/admin');
-            } else {
-                navigate('/dashboard');
-            }
+            navigate(
+                result.user?.role === 'admin' ? '/admin' : (from || '/dashboard'),
+                { replace: true }
+            );
         } catch (err) {
             console.error('Registration failed:', err);
         }
     };
 
     return (
-        <div className="flex min-h-[80vh] items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
-            <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="w-full max-w-md space-y-8 rounded-2xl bg-white p-10 shadow-xl dark:bg-gray-900 border border-green-100 dark:border-green-900"
-            >
-                <div className="text-center">
-                    <h2 className="mt-6 text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-                        Join Farm with Irene
-                    </h2>
-                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                        Start your farming journey today
+        <div className="shell flex justify-center py-16 sm:py-24">
+            <div className="w-full max-w-md">
+                <div className="panel p-8">
+                    <h1 className="t-h2 text-[1.75rem]">Create an account</h1>
+                    <p className="text-quiet mt-2 text-[0.9375rem]">
+                        {from === '/booking'
+                            ? 'One step and your slot is held. Your booking details are saved.'
+                            : 'So we can hold your bookings and keep your farm records in one place.'}
                     </p>
+
+                    <form className="mt-7 space-y-4" onSubmit={handleSubmit(onSubmit)}>
+                        <div>
+                            <label htmlFor="name" className="field-label">Full name</label>
+                            <input id="name" type="text" autoComplete="name"
+                                aria-invalid={!!errors.name} className="field-input" {...register('name')} />
+                            {errors.name && <p className="field-error">{errors.name.message}</p>}
+                        </div>
+
+                        <div>
+                            <label htmlFor="email" className="field-label">Email</label>
+                            <input id="email" type="email" autoComplete="email" inputMode="email"
+                                aria-invalid={!!errors.email} className="field-input" {...register('email')} />
+                            {errors.email && <p className="field-error">{errors.email.message}</p>}
+                        </div>
+
+                        <div>
+                            <label htmlFor="phone" className="field-label">Phone number</label>
+                            <input id="phone" type="tel" autoComplete="tel" inputMode="tel"
+                                placeholder="0712345678"
+                                aria-invalid={!!errors.phone} className="field-input tnum" {...register('phone')} />
+                            {errors.phone && <p className="field-error">{errors.phone.message}</p>}
+                        </div>
+
+                        <div>
+                            <label htmlFor="password" className="field-label">Password</label>
+                            <input id="password" type="password" autoComplete="new-password"
+                                aria-invalid={!!errors.password} className="field-input" {...register('password')} />
+                            {errors.password
+                                ? <p className="field-error">{errors.password.message}</p>
+                                : <p className="text-xs text-quiet mt-1.5">At least 6 characters.</p>}
+                        </div>
+
+                        <input type="hidden" {...register('role')} />
+
+                        {error && (
+                            <div role="alert" className="flex items-start gap-2.5 p-3.5 rounded-md bg-bulb-tint text-bulb text-sm">
+                                <AlertCircle className="w-4 h-4 shrink-0 mt-px" aria-hidden="true" />
+                                <span>{error.data?.error || 'We could not create that account. Check the details and try again.'}</span>
+                            </div>
+                        )}
+
+                        <button type="submit" disabled={isLoading} className="btn btn-primary btn-block">
+                            {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating account</> : 'Create account'}
+                        </button>
+                    </form>
                 </div>
 
-                <form className="mt-8 space-y-4" onSubmit={handleSubmit(onSubmit)}>
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Full Name</label>
-                            <input
-                                {...register('name')}
-                                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:border-green-500 focus:outline-none focus:ring-green-500 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                                placeholder="Jane Doe"
-                            />
-                            {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
-                            <input
-                                {...register('email')}
-                                type="email"
-                                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:border-green-500 focus:outline-none focus:ring-green-500 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                                placeholder="jane@example.com"
-                            />
-                            {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Phone</label>
-                            <input
-                                {...register('phone')}
-                                type="tel"
-                                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:border-green-500 focus:outline-none focus:ring-green-500 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                                placeholder="+254..."
-                            />
-                            {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
-                            <input
-                                {...register('password')}
-                                type="password"
-                                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:border-green-500 focus:outline-none focus:ring-green-500 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                                placeholder="••••••"
-                            />
-                            {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
-                        </div>
-
-                        {/* Hidden Role Input - defaulting to user */}
-                        <input type="hidden" {...register('role')} />
-                    </div>
-
-                    {error && (
-                        <div className="text-red-500 text-center text-sm">
-                            {error.data?.error || 'Registration failed.'}
-                        </div>
-                    )}
-
-                    <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="group relative flex w-full justify-center items-center gap-2 rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white hover:bg-green-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600 disabled:opacity-70 disabled:cursor-not-allowed transition-all"
-                    >
-                        {isLoading ? (
-                            <>
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                Creating Account...
-                            </>
-                        ) : (
-                            'Create Account'
-                        )}
-                    </button>
-                </form>
-
-                <p className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                <p className="mt-6 text-center text-sm text-quiet">
                     Already have an account?{' '}
-                    <Link to="/login" className="font-semibold leading-6 text-green-600 hover:text-green-500">
-                        Sign in
-                    </Link>
+                    <Link to="/login" state={location.state} className="link">Sign in</Link>
                 </p>
-            </motion.div>
+            </div>
         </div>
     );
 };

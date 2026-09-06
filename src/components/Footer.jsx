@@ -1,44 +1,68 @@
-import { Github, Linkedin, Mail, Facebook, Youtube, Phone } from "lucide-react";
 import { memo } from "react";
 import { Link } from 'react-router-dom';
+import { Mail, Facebook, Youtube, Phone, Instagram, MessageCircle, MapPin } from "lucide-react";
+import { SITE, FACTS } from "../config/site";
 
-// Social links data
-const socialLinks = [
-  {
-    href: "https://www.facebook.com/share/1aNUzPY1yX", // Placeholder
-    title: "Facebook",
-    icon: Facebook,
-  },
-  {
-    href: "https://www.youtube.com/@FarmWithIrene", // Placeholder
-    title: "YouTube",
-    icon: Youtube,
-  },
-  {
-    href: "mailto:FarmWithIrene@gmail.com",
-    title: "Email",
-    icon: Mail,
-  },
+const TikTok = (props) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+    strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
+    <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
+  </svg>
+);
+
+const SOCIALS = [
+  { href: SITE.social.facebook, title: "Facebook", Icon: Facebook },
+  { href: SITE.social.instagram, title: "Instagram", Icon: Instagram },
+  { href: SITE.social.tiktok, title: "TikTok", Icon: TikTok },
+  { href: SITE.social.youtube, title: "YouTube", Icon: Youtube },
 ];
 
-const Footer = memo(() => {
-  return (
-    <footer className="w-full bg-neutral-100 dark:bg-neutral-900 border-t border-gray-200 dark:border-gray-800 pt-10 pb-12 mt-20">
-      <div className="max-w-6xl mx-auto px-4 sm:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
+const EXPLORE = [
+  { to: "/services", label: "Services" },
+  { to: "/crops", label: "Crops" },
+  { to: "/projects", label: "Field work" },
+  { to: "/blogs", label: "Guides" },
+];
 
-        <div className="flex flex-col items-center md:items-start text-center md:text-left gap-2">
-          <span className="text-xl font-bold text-green-700 dark:text-green-500">Farm with Irene</span>
-          <p className="text-sm text-muted-foreground max-w-xs">
-            Empowering farmers with practical knowledge and sustainable practices.
-          </p>
-          <div className="text-sm text-muted-foreground mt-2">
-            © {new Date().getFullYear()} Farm with Irene. All rights reserved.
+const COMPANY = [
+  { to: "/about", label: "About Irene" },
+  { to: "/testimonials", label: "Client results" },
+  { to: "/partners", label: "Partners" },
+  { to: "/contact", label: "Contact" },
+];
+
+const FooterColumn = ({ heading, links }) => (
+  <div>
+    <h3 className="text-sm font-semibold text-ink mb-3 font-sans">{heading}</h3>
+    <ul className="space-y-2">
+      {links.map(({ to, label }) => (
+        <li key={to}>
+          <Link to={to} className="text-sm text-quiet hover:text-field transition-colors">
+            {label}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  </div>
+);
+
+const Footer = memo(() => (
+  <footer className="bg-white border-t border-rule mt-auto">
+    <div className="shell py-14">
+      <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
+
+        <div className="lg:col-span-1">
+          <div className="flex items-center gap-2.5">
+            <img src={SITE.logo} alt="" width="40" height="40" loading="lazy" className="w-10 h-10 shrink-0" />
+            <span className="font-display text-xl font-semibold text-field">{SITE.name}</span>
           </div>
-        </div>
+          <p className="text-sm text-quiet mt-3 leading-relaxed max-w-xs">
+            Practical agronomy for Kenyan onion and garlic growers — from land
+            preparation through to the buyer&rsquo;s scale.
+          </p>
 
-        <div className="flex flex-col items-center md:items-end gap-4">
-          <div className="flex gap-6">
-            {socialLinks.map(({ href, title, icon: Icon }) => (
+          <div className="flex gap-2 mt-5">
+            {SOCIALS.map(({ href, title, Icon }) => (
               <a
                 key={title}
                 href={href}
@@ -46,25 +70,61 @@ const Footer = memo(() => {
                 aria-label={title}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-500 hover:text-green-600 transition-transform duration-200 hover:scale-110"
+                className="w-9 h-9 grid place-items-center rounded-md border border-rule text-quiet hover:text-field hover:border-field transition-colors"
               >
-                <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
+                <Icon className="w-[1.05rem] h-[1.05rem]" />
               </a>
             ))}
           </div>
-          <div className="flex gap-4 text-sm font-medium text-gray-600 dark:text-gray-400">
-            <Link to="/about" className="hover:text-green-600 transition-colors">About Us</Link>
-            <Link to="/partners" className="hover:text-green-600 transition-colors">Partners</Link>
-            <Link to="/contact" className="hover:text-green-600 transition-colors">Contact</Link>
-
-            {/* <Link to="/privacy" className="hover:text-green-600 transition-colors">Privacy Policy</Link> */}
-          </div>
         </div>
 
+        <FooterColumn heading="Explore" links={EXPLORE} />
+        <FooterColumn heading="Farm with Irene" links={COMPANY} />
+
+        <div>
+          <h3 className="text-sm font-semibold text-ink mb-3">Talk to us</h3>
+          <ul className="space-y-3 text-sm">
+            <li>
+              <a href={SITE.phoneHref} className="flex items-center gap-2.5 text-quiet hover:text-field transition-colors">
+                <Phone className="w-4 h-4 shrink-0" />
+                <span className="tnum">{SITE.phoneDisplay}</span>
+              </a>
+              {FACTS.hours && <p className="text-xs text-quiet/80 mt-1 ml-6.5">{FACTS.hours}</p>}
+            </li>
+            <li>
+              <a href={SITE.whatsappHref} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-2.5 text-quiet hover:text-field transition-colors">
+                <MessageCircle className="w-4 h-4 shrink-0" />
+                WhatsApp
+              </a>
+            </li>
+            <li>
+              <a href={SITE.emailHref} className="flex items-center gap-2.5 text-quiet hover:text-field transition-colors break-all">
+                <Mail className="w-4 h-4 shrink-0" />
+                {SITE.email}
+              </a>
+            </li>
+            {FACTS.basedIn && (
+              <li className="flex items-center gap-2.5 text-quiet">
+                <MapPin className="w-4 h-4 shrink-0" />
+                {FACTS.basedIn}
+              </li>
+            )}
+          </ul>
+
+          <Link to="/booking" className="btn btn-primary btn-sm mt-5">
+            Book a consultation
+          </Link>
+        </div>
       </div>
-    </footer>
-  );
-});
+
+      <div className="border-t border-rule mt-12 pt-6 flex flex-col sm:flex-row justify-between gap-3 text-xs text-quiet">
+        <span>&copy; {new Date().getFullYear()} {SITE.name}. All rights reserved.</span>
+        <span>Built for farmers, in Kenya.</span>
+      </div>
+    </div>
+  </footer>
+));
 
 Footer.displayName = "Footer";
 

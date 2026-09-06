@@ -1,196 +1,188 @@
 import React, { useState, memo } from "react";
-import { Mail, Send, Phone, Facebook, Youtube, Instagram, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Input } from "./ui/input";
-import { Textarea } from "./ui/textarea";
-import { Button } from "./ui/button";
+import { Mail, Send, Phone, Facebook, Youtube, Instagram, Loader2, CheckCircle2, AlertCircle, MessageCircle } from "lucide-react";
+import { PageHeader } from "./common/Page";
+import { SITE, FACTS } from "../config/site";
 
-const sectionContainerVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.15 } },
-};
+const TikTok = (props) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+    strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
+    <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
+  </svg>
+);
 
-const formContainerVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
-};
-
-const StatusMessage = ({ status, message }) => {
-  if (status === "idle") return null;
-  return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: -10, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -10, scale: 0.95 }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
-      className={`flex items-center gap-2 p-3 rounded-lg text-sm font-medium ${status === "success"
-        ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800"
-        : status === "error"
-          ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800"
-          : "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800"
-        }`}
-    >
-      {status === "loading" && <Loader2 className="w-4 h-4 animate-spin" />}
-      {status === "success" && <CheckCircle2 className="w-4 h-4" />}
-      {status === "error" && <AlertCircle className="w-4 h-4" />}
-      {message}
-    </motion.div>
-  );
-};
+const SOCIALS = [
+  { href: SITE.social.facebook, title: "Facebook", Icon: Facebook },
+  { href: SITE.social.instagram, title: "Instagram", Icon: Instagram },
+  { href: SITE.social.tiktok, title: "TikTok", Icon: TikTok },
+  { href: SITE.social.youtube, title: "YouTube", Icon: Youtube },
+];
 
 function ContactComponent() {
   const [formState, setFormState] = useState({ status: "idle", message: "" });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setFormState({ status: "loading", message: "Sending..." });
+    const form = e.target;
+    setFormState({ status: "loading", message: "Sending your message…" });
 
-    const formData = new FormData(e.target);
-    const data = Object.fromEntries(formData.entries());
+    const formData = new FormData(form);
 
     try {
       const response = await fetch("https://formspree.io/f/xjgeywbg", {
         method: "POST",
-        headers: {
-          "Accept": "application/json",
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(data),
+        headers: { Accept: "application/json" },
+        body: formData,
       });
 
       if (response.ok) {
-        setFormState({ status: "success", message: "Message sent! We'll get back to you soon." });
-        e.target.reset();
+        form.reset();
+        setFormState({
+          status: "success",
+          message: "Message sent. We usually reply within a working day — if it is urgent, call instead.",
+        });
       } else {
-        const errorData = await response.json();
         setFormState({
           status: "error",
-          message: errorData.error || "Failed to send message. Please try again."
+          message: "That did not send. Please try again, or call us on " + SITE.phoneDisplay + ".",
         });
       }
-    } catch (error) {
+    } catch {
       setFormState({
         status: "error",
-        message: "An error occurred. Please check your connection."
+        message: "No connection. Check your network and try again, or call " + SITE.phoneDisplay + ".",
       });
     }
   };
 
+  const busy = formState.status === "loading";
+
   return (
-    <div className="w-full min-h-[80vh] flex flex-col items-center justify-center px-4 py-12">
-      <motion.div
-        variants={sectionContainerVariants}
-        initial="hidden"
-        animate="visible"
-        className="flex flex-col items-center gap-8 w-full max-w-xl"
-      >
-        <motion.div variants={itemVariants} className="flex flex-col items-center text-center">
-          <h2 className="text-3xl sm:text-5xl font-bold text-center text-foreground pb-4">
-            Contact Us
-          </h2>
-          <div className="space-y-4 text-lg text-muted-foreground">
-            <div className="flex items-center justify-center gap-2">
-              <Phone className="w-5 h-5 text-green-600" />
-              <span>+254 784 298 879</span>
+    <>
+      <PageHeader
+        title="Get in touch"
+        lead="Calling is the fastest way to reach us. If you would rather write, use the form and we will come back to you."
+      />
+
+      <div className="shell py-12 sm:py-16">
+        <div className="grid gap-10 lg:gap-16 lg:grid-cols-[20rem_minmax(0,1fr)] items-start">
+
+          {/* Direct routes first — most farmers would rather call than type. */}
+          <div className="space-y-6">
+            <div>
+              <h2 className="t-h3">Talk to us directly</h2>
+              <ul className="mt-4 space-y-3">
+                <li>
+                  <a href={SITE.phoneHref} className="flex items-center gap-3 panel p-4 hover:border-field transition-colors">
+                    <Phone className="w-5 h-5 text-field shrink-0" aria-hidden="true" />
+                    <span>
+                      <span className="block font-medium tnum">{SITE.phoneDisplay}</span>
+                      <span className="block text-sm text-quiet">
+                        {FACTS.hours || "Call or text"}
+                      </span>
+                    </span>
+                  </a>
+                </li>
+                <li>
+                  <a href={SITE.whatsappHref} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-3 panel p-4 hover:border-field transition-colors">
+                    <MessageCircle className="w-5 h-5 text-field shrink-0" aria-hidden="true" />
+                    <span>
+                      <span className="block font-medium">WhatsApp</span>
+                      <span className="block text-sm text-quiet">Send photos of your crop</span>
+                    </span>
+                  </a>
+                </li>
+                <li>
+                  <a href={SITE.emailHref} className="flex items-center gap-3 panel p-4 hover:border-field transition-colors">
+                    <Mail className="w-5 h-5 text-field shrink-0" aria-hidden="true" />
+                    <span className="min-w-0">
+                      <span className="block font-medium break-all">{SITE.email}</span>
+                      <span className="block text-sm text-quiet">For documents and quotes</span>
+                    </span>
+                  </a>
+                </li>
+              </ul>
             </div>
-            <div className="flex items-center justify-center gap-2">
-              <Mail className="w-5 h-5 text-green-600" />
-              <span>FarmWithIrene@gmail.com</span>
+
+            <div>
+              <h2 className="t-h3">Follow the farm</h2>
+              <div className="flex gap-2 mt-4">
+                {SOCIALS.map(({ href, title, Icon }) => (
+                  <a
+                    key={title}
+                    href={href}
+                    title={title}
+                    aria-label={title}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-10 h-10 grid place-items-center rounded-md border border-rule text-quiet hover:text-field hover:border-field transition-colors"
+                  >
+                    <Icon className="w-[1.15rem] h-[1.15rem]" />
+                  </a>
+                ))}
+              </div>
             </div>
           </div>
-        </motion.div>
 
-        <motion.form
-          onSubmit={handleSubmit}
-          variants={formContainerVariants}
-          className="w-full p-6 sm:p-8 bg-white/90 dark:bg-neutral-900/80 border border-green-200 dark:border-green-800/60 rounded-2xl shadow space-y-4"
-        >
-          <AnimatePresence>
-            <motion.div key={formState.status} variants={itemVariants} layout>
-              <StatusMessage status={formState.status} message={formState.message} />
-            </motion.div>
-          </AnimatePresence>
-          <motion.div variants={itemVariants}>
-            <Input type="text" name="name" placeholder="Your Name" required disabled={formState.status === "loading"} />
-          </motion.div>
-          <motion.div variants={itemVariants}>
-            <Input type="email" name="email" placeholder="Your Email" required disabled={formState.status === "loading"} />
-          </motion.div>
-          <motion.div variants={itemVariants}>
-            <Textarea rows={4} name="message" placeholder="Your Message" required disabled={formState.status === "loading"} />
-          </motion.div>
-          <motion.div variants={itemVariants}>
-            <Button
-              type="submit"
-              disabled={formState.status === "loading"}
-              className="w-full text-lg font-semibold py-3 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white"
-            >
-              {formState.status === "loading" ? "Sending..." : <>Send Message <Send className="w-4 h-4" /></>}
-            </Button>
-          </motion.div>
-        </motion.form>
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="panel p-6 sm:p-8" noValidate={false}>
+            <h2 className="t-h3">Send a message</h2>
 
-        <motion.div variants={itemVariants} className="flex flex-col items-center gap-4">
-          <p className="text-muted-foreground font-medium italic">
-            Follow us for more updates:
-          </p>
-          <div className="flex items-center gap-6">
-            <a
-              href="https://www.facebook.com/share/1aNUzPY1yX"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-3 rounded-full bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-1"
-              title="Facebook"
-            >
-              <Facebook className="w-6 h-6" />
-            </a>
-            <a
-              href="https://www.instagram.com/farmwithirene?igsh=OG55bTZwd3AzZTM2"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-3 rounded-full bg-pink-100 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 hover:bg-pink-600 hover:text-white dark:hover:bg-pink-600 transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-1"
-              title="Instagram"
-            >
-              <Instagram className="w-6 h-6" />
-            </a>
-            <a
-              href="tiktok.com/@farm_with_irene"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-3 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-1"
-              title="TikTok"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="w-6 h-6"
+            {formState.status !== "idle" && (
+              <div
+                role="status"
+                aria-live="polite"
+                className={`flex items-start gap-2.5 mt-5 p-3.5 rounded-md text-sm
+                  ${formState.status === "success" ? "bg-field-tint text-field-dark"
+                    : formState.status === "error" ? "bg-bulb-tint text-bulb"
+                      : "bg-husk text-quiet"}`}
               >
-                <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
-              </svg>
-            </a>
-            <a
-              href="https://www.youtube.com/@FarmWithIrene"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-3 rounded-full bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white dark:hover:bg-red-600 transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-1"
-              title="YouTube"
-            >
-              <Youtube className="w-6 h-6" />
-            </a>
-          </div>
-        </motion.div>
-      </motion.div>
-    </div>
+                {busy && <Loader2 className="w-4 h-4 animate-spin shrink-0 mt-px" />}
+                {formState.status === "success" && <CheckCircle2 className="w-4 h-4 shrink-0 mt-px" />}
+                {formState.status === "error" && <AlertCircle className="w-4 h-4 shrink-0 mt-px" />}
+                <span>{formState.message}</span>
+              </div>
+            )}
+
+            <div className="mt-5 space-y-4">
+              <div>
+                <label htmlFor="contact-name" className="field-label">Your name</label>
+                <input id="contact-name" name="name" type="text" required disabled={busy}
+                  autoComplete="name" className="field-input" />
+              </div>
+
+              <div>
+                <label htmlFor="contact-email" className="field-label">Email</label>
+                <input id="contact-email" name="email" type="email" required disabled={busy}
+                  autoComplete="email" inputMode="email" className="field-input" />
+              </div>
+
+              <div>
+                <label htmlFor="contact-phone" className="field-label">
+                  Phone <span className="text-quiet font-normal">(optional, but faster)</span>
+                </label>
+                <input id="contact-phone" name="phone" type="tel" disabled={busy}
+                  autoComplete="tel" inputMode="tel" placeholder="07xx xxx xxx" className="field-input" />
+              </div>
+
+              <div>
+                <label htmlFor="contact-message" className="field-label">
+                  What do you need help with?
+                </label>
+                <textarea id="contact-message" name="message" rows={5} required disabled={busy}
+                  placeholder="Acreage, crop, water source, and where you are stuck."
+                  className="field-input resize-y" />
+              </div>
+
+              <button type="submit" disabled={busy} className="btn btn-primary btn-block">
+                {busy ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending</> : <><Send className="w-4 h-4" /> Send message</>}
+              </button>
+            </div>
+          </form>
+
+        </div>
+      </div>
+    </>
   );
 }
 

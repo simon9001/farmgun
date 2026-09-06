@@ -2,35 +2,109 @@
 <html lang="en">
 
 <head>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
-    crossorigin="anonymous" referrerpolicy="no-referrer">
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/png" href="/assets/logos/image.png" />
-  <meta name="viewport" content="width=device-width, initial-scale=0.75" />
-  <title>FarmWithIrene | Farm with Irene | Professional Agricultural Consultation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#1F4D33" />
 
-  <!-- SEO Meta Tags -->
+  <!-- Icons. Google picks the site favicon up from rel="icon" / apple-touch-icon,
+       so both point at the real logo on a stable, crawlable URL. -->
+  <link rel="icon" href="/logo.png" type="image/png" sizes="231x231" />
+  <link rel="apple-touch-icon" href="/logo.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+
+  <title>Farm with Irene | Onion &amp; Garlic Farming Consultancy in Kenya</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap"
+    rel="stylesheet" />
+
+  <!-- SEO -->
   <meta name="description"
-    content="Professional agricultural consultation and sustainable farming solutions with Irene. Expert advice on high-yield crops, irrigation design, and farm management. FarmWithIrene empowers modern farmers." />
+    content="Field-tested agronomy for Kenyan onion and garlic growers. Irene Mwangi advises farmers on land preparation, spacing, irrigation, pest control and getting a fair price at the market. Book a consultation." />
   <meta name="keywords"
-    content="FarmWithIrene, farmwithirene, Farm with Irene, farmwithirean, FARMWITHIRENE, farm with irean, agriculture consultation, farm management, sustainable farming, irrigation design, onion production, farm mentorship" />
-  <meta name="author" content="Irene" />
+    content="FarmWithIrene, Farm with Irene, onion farming Kenya, garlic farming Kenya, agricultural consultant Kenya, farm consultancy, irrigation design, onion production, agronomy advice, farm mentorship" />
+  <meta name="author" content="Irene Mwangi" />
+  <link rel="canonical" href="https://farmwithirene.com/" />
 
-  <!-- Open Graph / Facebook -->
+  <!-- Open Graph / Facebook / WhatsApp -->
   <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Farm with Irene" />
+  <meta property="og:locale" content="en_KE" />
   <meta property="og:url" content="https://farmwithirene.com/" />
-  <meta property="og:title" content="Farm with Irene | Professional Agricultural Consultation" />
+  <meta property="og:title" content="Farm with Irene | Onion & Garlic Farming Consultancy in Kenya" />
   <meta property="og:description"
-    content="Professional agricultural consultation and sustainable farming solutions with Irene. Expert advice on high-yield crops, irrigation design, and farm management." />
-  <meta property="og:image" content="https://farmwithirene.com/assets/logos/og-image.png" />
+    content="Field-tested agronomy for Kenyan onion and garlic growers — from land preparation to the buyer's scale. Book a consultation with Irene Mwangi." />
+  <meta property="og:image" content="https://farmwithirene.com/og-image.jpg" />
+  <meta property="og:image:width" content="1600" />
+  <meta property="og:image:height" content="1201" />
+  <meta property="og:image:alt" content="A harvested red onion crop curing in rows on a drip-irrigated field." />
 
   <!-- Twitter -->
-  <meta property="twitter:card" content="summary_large_image" />
-  <meta property="twitter:url" content="https://farmwithirene.com/" />
-  <meta property="twitter:title" content="Farm with Irene | Professional Agricultural Consultation" />
-  <meta property="twitter:description"
-    content="Professional agricultural consultation and sustainable farming solutions with Irene. Expert advice on high-yield crops, irrigation design, and farm management." />
-  <meta property="twitter:image" content="https://farmwithirene.com/assets/logos/og-image.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="https://farmwithirene.com/" />
+  <meta name="twitter:title" content="Farm with Irene | Onion & Garlic Farming Consultancy in Kenya" />
+  <meta name="twitter:description"
+    content="Field-tested agronomy for Kenyan onion and garlic growers — from land preparation to the buyer's scale." />
+  <meta name="twitter:image" content="https://farmwithirene.com/og-image.jpg" />
+
+  <!--
+    Structured data. This is the part that actually tells Google which image is
+    the brand logo, rather than leaving it to guess. Google reads `logo` from an
+    Organization entity for the knowledge panel and brand treatments.
+    Reference: https://developers.google.com/search/docs/appearance/structured-data/logo
+  -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "@id": "https://farmwithirene.com/#organization",
+    "name": "Farm with Irene",
+    "alternateName": "FarmWithIrene",
+    "url": "https://farmwithirene.com/",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://farmwithirene.com/logo.png",
+      "width": 231,
+      "height": 231,
+      "caption": "Farm with Irene"
+    },
+    "image": "https://farmwithirene.com/og-image.jpg",
+    "description": "Agricultural consultancy in Kenya specialising in onion and garlic production, from land preparation and irrigation design through to harvest and market linkage.",
+    "email": "FarmWithIrene@gmail.com",
+    "telephone": "+254784298879",
+    "founder": {
+      "@type": "Person",
+      "name": "Irene Mwangi"
+    },
+    "areaServed": {
+      "@type": "Country",
+      "name": "Kenya"
+    },
+    "knowsAbout": [
+      "Onion farming",
+      "Garlic farming",
+      "Drip irrigation design",
+      "Crop agronomy",
+      "Post-harvest curing and storage"
+    ],
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "telephone": "+254784298879",
+      "contactType": "customer service",
+      "areaServed": "KE",
+      "availableLanguage": ["en", "sw"]
+    },
+    "sameAs": [
+      "https://www.facebook.com/share/1aNUzPY1yX",
+      "https://www.instagram.com/farmwithirene",
+      "https://www.tiktok.com/@farm_with_irene",
+      "https://www.youtube.com/@FarmWithIrene"
+    ]
+  }
+  </script>
 </head>
 
 <body>

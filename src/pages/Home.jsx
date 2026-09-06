@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Star, Quote, Loader2, Lightbulb, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+    Loader2, Phone, Star, TrendingUp, TrendingDown, Minus, Quote
+} from 'lucide-react';
 import {
     useGetPublicCropsQuery,
     useGetPublicProjectsQuery,
@@ -10,459 +11,477 @@ import {
     useGetPublicTipsQuery,
     useGetCropPricesQuery,
 } from '../features/Api/publicApi';
-import FloatingTips from '../components/FloatingTips';
 import About from '../components/About';
-import ImageCarousel from '../components/common/ImageCarousel';
 import ProjectCropDetailModal from '../components/common/ProjectCropDetailModal';
-import MarketTicker from '../components/MarketTicker';
+import { SITE, FACTS } from '../config/site';
 
-import img002 from '../assets/002.jpeg';
-import img003 from '../assets/0003.jpeg';
-import img004 from '../assets/004.jpeg';
-import img005 from '../assets/005.jpeg';
-import img008 from '../assets/008.jpeg';
-import img006 from '../assets/006.jpeg';
-import img007 from '../assets/007.jpeg';
-import img009 from '../assets/009.jpeg';
-import img010 from '../assets/010.jpeg';
+import heroField from '../assets/002.jpeg';
 
-
-const HERO_IMAGES = [
-    img002,
-    img003,
-    img004,
-    img005,
-    img006,
-    img007,
-    img008,
-    img009,
-    img010
+/* What an onion and garlic agronomy practice actually covers. Kept honest and
+   concrete — this is the question a farmer is asking before they pay anyone. */
+const CAPABILITIES = [
+    { title: 'Land preparation', body: 'Soil testing, ploughing depth and bed layout before a single seed goes in.' },
+    { title: 'Variety & seed rate', body: 'Choosing the variety that suits your soil, altitude and target market.' },
+    { title: 'Drip irrigation', body: 'Line spacing, emitter choice and a watering schedule your water source can sustain.' },
+    { title: 'Pest & disease', body: 'Thrips, downy mildew and purple blotch — what to spray, when, and what to skip.' },
+    { title: 'Curing & storage', body: 'Getting the crop off the field and into store without losing weight or grade.' },
+    { title: 'Selling', body: 'Reading the market, timing the harvest and finding a buyer who pays properly.' },
 ];
 
+const STEPS = [
+    { n: 1, title: 'Tell us about your land', body: 'Acreage, water source, altitude and what you have grown before. A short call is enough to start.' },
+    { n: 2, title: 'We plan the crop together', body: 'Variety, spacing, irrigation layout, an input schedule and a budget you can actually fund.' },
+    { n: 3, title: 'We stay on until harvest', body: 'Check-ins through the season, help when something goes wrong, and support finding a buyer.' },
+];
+
+/* Cards show one still image. The auto-rotating carousel stays in the detail
+   modal, where it is asked for — a grid of nine simultaneously cross-fading
+   carousels is what made the old page feel restless. */
+const Thumb = ({ src, alt }) => (
+    src ? (
+        <img
+            src={src}
+            alt={alt || ''}
+            loading="lazy"
+            decoding="async"
+            className="w-full h-full object-cover"
+        />
+    ) : (
+        <div className="w-full h-full grid place-items-center bg-field-tint text-field font-display text-2xl">
+            {alt?.charAt(0)?.toUpperCase() || '·'}
+        </div>
+    )
+);
+
+const SectionHead = ({ title, children, action }) => (
+    <div className="section-head flex flex-wrap items-end justify-between gap-4">
+        <div>
+            <h2 className="t-h2">{title}</h2>
+            {children && <p className="t-lead mt-3">{children}</p>}
+        </div>
+        {action}
+    </div>
+);
+
+const PriceChange = ({ value }) => {
+    const n = Number(value);
+    if (!Number.isFinite(n) || n === 0) {
+        return <span className="inline-flex items-center gap-1 text-quiet"><Minus className="w-3.5 h-3.5" />0%</span>;
+    }
+    const up = n > 0;
+    const Icon = up ? TrendingUp : TrendingDown;
+    return (
+        <span className={`inline-flex items-center gap-1 font-medium ${up ? 'text-field' : 'text-bulb'}`}>
+            <Icon className="w-3.5 h-3.5" />
+            {up ? '+' : ''}{n}%
+        </span>
+    );
+};
 
 const Home = () => {
-    // Fetch featured data
-    const { data: cropsData, isLoading: cropsLoading } = useGetPublicCropsQuery({ featured: true, limit: 12 });
-    const { data: projectsData, isLoading: projectsLoading } = useGetPublicProjectsQuery({ featured: true, limit: 12 });
+    const { data: cropsData, isLoading: cropsLoading } = useGetPublicCropsQuery({ featured: true, limit: 9 });
+    const { data: projectsData, isLoading: projectsLoading } = useGetPublicProjectsQuery({ featured: true, limit: 6 });
     const { data: testimonialsData, isLoading: testimonialsLoading } = useGetPublicTestimonialsQuery({ featured: true, limit: 3 });
     const { data: servicesData, isLoading: servicesLoading } = useGetPublicServicesQuery({ featured: true, limit: 100 });
+    const { data: tipsData } = useGetPublicTipsQuery({ limit: 3 });
+    const { data: cropPricesData, isLoading: pricesLoading } = useGetCropPricesQuery({});
 
     const [selectedItem, setSelectedItem] = useState(null);
     const [detailType, setDetailType] = useState('project');
     const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-    const { data: tipsData } = useGetPublicTipsQuery({ limit: 5 });
-    const { data: cropPricesData, isLoading: pricesLoading } = useGetCropPricesQuery({});
-    const [forceShowTips, setForceShowTips] = useState(false);
-    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const openDetail = (item, type) => {
+        setSelectedItem(item);
+        setDetailType(type);
+        setIsDetailOpen(true);
+    };
 
-    // Hero Image Slider Effect
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setCurrentImageIndex((prev) => (prev + 1) % HERO_IMAGES.length);
-        }, 5000);
-        return () => clearInterval(interval);
-    }, []);
-
-    const featuredCrops = cropsData?.crops || [];
-    const featuredProjects = projectsData?.projects || [];
+    const crops = cropsData?.crops || [];
+    const projects = projectsData?.projects || [];
     const testimonials = testimonialsData?.testimonials || [];
-    const featuredServices = servicesData?.services || [];
+    const services = servicesData?.services || [];
     const tips = tipsData?.tips || [];
-    const cropPrices = cropPricesData?.prices || [];
+    const prices = (cropPricesData?.prices || []).slice(0, 6);
     const priceDate = cropPricesData?.price_date;
 
     return (
-        <div className="flex flex-col w-full">
-            {/* Hero Section */}
-            <section className="relative h-[80vh] flex items-center justify-center overflow-hidden bg-green-900 text-white">
-                {/* Floating Tips */}
-                <FloatingTips forceShow={forceShowTips} onDismiss={() => setForceShowTips(false)} />
-
-                {/* Tips Dropdown/Toggle */}
-                {tips.length > 0 && (
-                    <div className="absolute top-4 right-4 z-40">
-                        <motion.div className="flex flex-col items-end">
-                            <button
-                                onClick={() => setForceShowTips(!forceShowTips)}
-                                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/30 px-4 py-2 rounded-full transition-all"
-                            >
-                                <Lightbulb className={`w-4 h-4 ${forceShowTips ? 'text-yellow-400' : 'text-gray-300'}`} />
-                                <span className="text-sm font-medium">Tips</span>
-                                {forceShowTips ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                            </button>
-
-                            <AnimatePresence>
-                                {forceShowTips && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                        className="mt-2 w-64 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 p-2 overflow-hidden"
-                                    >
-                                        <div className="max-h-60 overflow-y-auto no-scrollbar">
-                                            {tips.map((tip) => (
-                                                <div
-                                                    key={tip.id}
-                                                    className="p-3 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-xl transition-colors cursor-default"
-                                                >
-                                                    <h4 className="text-xs font-bold text-green-600 dark:text-green-400 uppercase tracking-wider mb-1">
-                                                        {tip.title}
-                                                    </h4>
-                                                    <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed">
-                                                        {tip.excerpt || tip.content.substring(0, 60)}
-                                                    </p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </motion.div>
-                    </div>
-                )}
-
-                <div className="absolute inset-0 z-0">
-                    <div className="absolute inset-0 bg-black/50 z-10" />
-                    <AnimatePresence mode="wait">
-                        <motion.img
-                            key={currentImageIndex}
-                            src={HERO_IMAGES[currentImageIndex]}
-                            initial={{ opacity: 0, scale: 1.1 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 1.5, ease: "easeOut" }}
-                            alt="Farm Landscape"
-                            className="absolute inset-0 w-full h-full object-cover"
-                        />
-                    </AnimatePresence>
+        <>
+            {/* ── Hero ───────────────────────────────────────────────
+                A single photograph of a managed crop, not a slideshow.
+                Text sits on solid colour so it is legible in daylight on a
+                cheap screen — no relying on an overlay for contrast. */}
+            <section className="relative bg-field">
+                {/* Stacks above the copy on a phone; bleeds off the right edge on
+                    desktop while the copy stays on the page grid, so the headline
+                    lines up with the wordmark in the header. */}
+                <div className="h-56 sm:h-72 lg:h-auto lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2">
+                    <img
+                        src={heroField}
+                        alt="A drip-irrigated red onion crop in the field, bulbs forming at the base of the leaves"
+                        className="w-full h-full object-cover"
+                        fetchPriority="high"
+                        decoding="async"
+                        width="1125"
+                        height="1125"
+                    />
                 </div>
 
-                <div className="relative z-20 text-center px-4 max-w-4xl mx-auto">
-                    <motion.h1
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8 }}
-                        className="text-5xl md:text-7xl font-bold mb-6 tracking-tight"
-                    >
-                        Welcome to <span className="text-green-400">Farm with Irene</span>
-                    </motion.h1>
-                    <motion.p
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8, delay: 0.2 }}
-                        className="text-xl md:text-2xl mb-8 text-gray-200"
-                    >
-                        Professional Agricultural Consultation & Sustainable Farming Solutions
-                    </motion.p>
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8, delay: 0.4 }}
-                        className="flex flex-col sm:flex-row gap-4 justify-center"
-                    >
-                        <Link to="/services" className="bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-full font-bold text-lg transition-all transform hover:scale-105 shadow-lg">
-                            Explore Services
-                        </Link>
-                        <Link to="/contact" className="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/30 px-8 py-4 rounded-full font-bold text-lg transition-all">
-                            Contact Us
-                        </Link>
-                    </motion.div>
-                </div>
+                <div className="shell relative">
+                    <div className="lg:w-1/2 lg:pr-14 py-12 lg:py-24 lg:min-h-[34rem] flex flex-col justify-center">
+                        <h1 className="t-display text-white rise rise-1">
+                            Onions and garlic,<br />grown to sell.
+                        </h1>
 
-                {/* Floating Market Ticker — fixed right side, persists across scroll */}
-                <MarketTicker
-                    prices={cropPrices}
-                    priceDate={priceDate}
-                    isLoading={pricesLoading}
-                />
-            </section>
-
-            {/* About Section */}
-            <section className="bg-white dark:bg-gray-900 overflow-hidden">
-                <About />
-            </section>
-
-            {/* Featured Services Section */}
-            <section className="py-20 bg-gray-50 dark:bg-gray-800">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-16">
-                        <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Our Services</h2>
-                        <div className="w-20 h-1 bg-green-500 mx-auto rounded-full mb-4"></div>
-                        <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                            We offer professional agricultural consultation to help you succeed in farming.
+                        <p className="mt-6 text-white/80 leading-relaxed text-[1.0625rem] sm:text-lg max-w-[34rem] rise rise-2">
+                            I am {SITE.person}. I advise Kenyan farmers on land preparation,
+                            spacing, irrigation and pest control &mdash; and on getting a fair price
+                            when the crop comes off. Everything I teach, I have run on my own farm first.
                         </p>
+
+                        <div className="mt-9 flex flex-col sm:flex-row gap-3 rise rise-3">
+                            <Link to="/booking" className="btn btn-onfield">
+                                Book a consultation
+                            </Link>
+                            <a href={SITE.phoneHref} className="btn btn-ghost-onfield">
+                                <Phone className="w-4 h-4" />
+                                <span className="tnum">{SITE.phoneDisplay}</span>
+                            </a>
+                        </div>
+
+                        {(FACTS.basedIn || FACTS.yearsFarming) && (
+                            <p className="mt-8 text-sm text-white/55 rise rise-4">
+                                {[FACTS.yearsFarming && `${FACTS.yearsFarming} years in the field`, FACTS.basedIn]
+                                    .filter(Boolean)
+                                    .join(' — ')}
+                            </p>
+                        )}
                     </div>
+                </div>
+            </section>
+
+
+            {/* ── What the work covers ─────────────────────────────── */}
+            <section className="section bg-white">
+                <div className="shell">
+                    <SectionHead title="What a consultation covers">
+                        The whole season, not just the planting. Most losses happen after the
+                        crop is already in the ground.
+                    </SectionHead>
+
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 border-t border-l border-rule">
+                        {CAPABILITIES.map(({ title, body }) => (
+                            <div key={title} className="border-b border-r border-rule p-6 lg:p-7">
+                                <h3 className="t-h3">{title}</h3>
+                                <p className="mt-2 text-[0.9375rem] text-quiet leading-relaxed">{body}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* ── Services, with prices in the open ─────────────────── */}
+            <section className="section bg-husk">
+                <div className="shell">
+                    <SectionHead
+                        title="Services and what they cost"
+                        action={<Link to="/services" className="link">See all services</Link>}
+                    >
+                        No hidden pricing. Pick what you need and book a time that suits you.
+                    </SectionHead>
 
                     {servicesLoading ? (
-                        <div className="flex justify-center p-12">
-                            <Loader2 className="w-8 h-8 animate-spin text-green-600" />
-                        </div>
+                        <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-field" /></div>
+                    ) : services.length === 0 ? (
+                        <p className="text-quiet">Services are being updated. Call {SITE.phoneDisplay} and we will talk it through.</p>
                     ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {featuredServices.map((service, index) => (
-                                <motion.div
-                                    key={service.id}
-                                    initial={{ opacity: 0, scale: 0.95 }}
-                                    whileInView={{ opacity: 1, scale: 1 }}
-                                    viewport={{ once: true }}
-                                    transition={{ delay: index * 0.1 }}
-                                    className="group bg-white dark:bg-gray-900 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 flex flex-col h-full cursor-pointer"
-                                    onClick={() => {
-                                        setSelectedItem(service);
-                                        setDetailType('service');
-                                        setIsDetailOpen(true);
-                                    }}
-                                >
-                                    <div className="h-40 overflow-hidden shrink-0">
-                                        {(service.featured_media?.optimized_url || service.featured_media?.url) ? (
-                                            <img
-                                                src={service.featured_media.optimized_url || service.featured_media.url}
-                                                alt={service.name}
-                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600">
-                                                {service.name?.charAt(0).toUpperCase()}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="p-5 flex flex-col flex-grow">
-                                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{service.name}</h3>
-                                        <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2 mb-4 flex-grow">{service.description}</p>
-                                        <div className="flex items-center justify-between mt-auto">
-                                            <span className="text-base font-bold text-green-600">
-                                                {service.price ? `Ksh ${service.price}` : 'Contact Us'}
-                                            </span>
-                                            <Link
-                                                to={`/booking?serviceId=${service.id}`}
-                                                onClick={(e) => e.stopPropagation()}
-                                                className="text-green-600 hover:text-green-700 font-medium inline-flex items-center text-sm"
+                        <ul className="panel divide-y divide-rule overflow-hidden">
+                            {services.slice(0, 6).map((service) => {
+                                const img = service.featured_media?.optimized_url || service.featured_media?.url;
+                                return (
+                                    <li key={service.id}>
+                                        <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 sm:p-5 hover:bg-husk/60 transition-colors">
+                                            <button
+                                                type="button"
+                                                onClick={() => openDetail(service, 'service')}
+                                                className="flex items-center gap-4 text-left flex-1 min-w-0"
                                             >
-                                                Book <ArrowRight className="w-4 h-4 ml-1" />
-                                            </Link>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </div>
-                    )}
+                                                <span className="w-16 h-16 sm:w-20 sm:h-20 rounded-md overflow-hidden bg-field-tint shrink-0 grid place-items-center text-field font-display text-xl">
+                                                    {img
+                                                        ? <img src={img} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                                                        : service.name?.charAt(0).toUpperCase()}
+                                                </span>
+                                                <span className="min-w-0">
+                                                    <span className="block font-medium text-ink">{service.name}</span>
+                                                    <span className="block text-sm text-quiet mt-1 line-clamp-2">{service.description}</span>
+                                                </span>
+                                            </button>
 
-                    <div className="text-center mt-12">
-                        <Link to="/services" className="inline-block border border-green-600 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 px-6 py-3 rounded-lg font-medium transition-colors">
-                            View More Services
-                        </Link>
-                    </div>
+                                            <div className="flex items-center justify-between sm:justify-end gap-4 sm:shrink-0 pl-20 sm:pl-0">
+                                                <span className="font-medium tnum whitespace-nowrap">
+                                                    {service.price ? `Ksh ${Number(service.price).toLocaleString('en-KE')}` : 'On request'}
+                                                </span>
+                                                <Link to={`/booking?serviceId=${service.id}`} className="btn btn-primary btn-sm">
+                                                    Book
+                                                </Link>
+                                            </div>
+                                        </div>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    )}
                 </div>
             </section>
 
-            {/* Featured Crops Section */}
-            <section className="py-20 bg-white dark:bg-gray-900">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-16">
-                        <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Crops I Deal With</h2>
-                        <div className="w-20 h-1 bg-green-500 mx-auto rounded-full mb-4"></div>
-                        <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                            Specializing in high-value crops and modern farming techniques to maximize your yield.
-                        </p>
-                    </div>
+            {/* ── How it works. Numbered because it genuinely is a sequence. */}
+            <section className="section bg-white">
+                <div className="shell">
+                    <SectionHead title="How working together goes" />
 
-                    {cropsLoading ? (
-                        <div className="flex justify-center p-12">
-                            <Loader2 className="w-8 h-8 animate-spin text-green-600" />
-                        </div>
-                    ) : (
-                        <div className="grid grid-rows-2 grid-flow-col gap-6 overflow-x-auto snap-x snap-mandatory pb-6 auto-cols-[100%] md:auto-cols-[calc(33.333%-1rem)] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                            {featuredCrops.map((crop, index) => (
-                                <motion.div
-                                    key={crop.id}
-                                    initial={{ opacity: 0, scale: 0.95 }}
-                                    whileInView={{ opacity: 1, scale: 1 }}
-                                    viewport={{ once: true }}
-                                    transition={{ delay: index * 0.1 }}
-                                    className="snap-start group bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col h-full"
-                                    onClick={() => {
-                                        setSelectedItem(crop);
-                                        setDetailType('crop');
-                                        setIsDetailOpen(true);
-                                    }}
-                                >
-                                    <div className="h-48 overflow-hidden shrink-0">
-                                        <ImageCarousel
-                                            images={[
-                                                crop.featured_media?.optimized_url || crop.featured_media?.url,
-                                                ...(crop.crop_media?.map(cm => cm.media?.optimized_url || cm.media?.url) || [])
-                                            ].filter(Boolean)}
-                                            className="transition-transform duration-500 group-hover:scale-110"
-                                        />
-                                    </div>
-                                    <div className="p-5 flex flex-col flex-grow">
-                                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{crop.name}</h3>
-                                        <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2 mb-4 flex-grow">{crop.description}</p>
-                                        <div className="inline-flex items-center text-green-600 font-semibold hover:text-green-700 mt-auto text-sm">
-                                            View Details <ArrowRight className="w-4 h-4 ml-1" />
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </div>
-                    )}
-
-                    <div className="text-center mt-12">
-                        <Link to="/crops" className="inline-block border border-green-600 text-green-600 hover:bg-green-50 px-6 py-2 rounded-lg font-medium transition-colors">
-                            View More Crops
-                        </Link>
-                    </div>
+                    <ol className="grid gap-8 md:grid-cols-3">
+                        {STEPS.map(({ n, title, body }) => (
+                            <li key={n}>
+                                <span className="block font-display text-3xl text-bulb tnum leading-none">{n}</span>
+                                <h3 className="t-h3 mt-4">{title}</h3>
+                                <p className="mt-2 text-[0.9375rem] text-quiet leading-relaxed">{body}</p>
+                            </li>
+                        ))}
+                    </ol>
                 </div>
             </section>
 
-            {/* Featured Projects */}
-            <section className="py-20 bg-green-50 dark:bg-gray-800/50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-12">
-                        <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">Featured Projects</h2>
-                        <div className="w-20 h-1 bg-green-500 mx-auto rounded-full"></div>
-                    </div>
+            {/* ── Market prices. Real, dated data — the reason to come back. */}
+            {(pricesLoading || prices.length > 0) && (
+                <section className="section bg-husk">
+                    <div className="shell">
+                        <SectionHead title="What crops are fetching right now">
+                            {priceDate
+                                ? `Market prices recorded ${new Date(priceDate).toLocaleDateString('en-KE', { day: 'numeric', month: 'long', year: 'numeric' })}.`
+                                : 'Recent market prices, so you can time your harvest.'}
+                        </SectionHead>
 
-                    {projectsLoading ? (
-                        <div className="flex justify-center p-12">
-                            <Loader2 className="w-8 h-8 animate-spin text-green-600" />
-                        </div>
-                    ) : (
-                        <div className="grid grid-rows-2 grid-flow-col gap-6 overflow-x-auto snap-x snap-mandatory pb-6 auto-cols-[100%] md:auto-cols-[calc(33.333%-1rem)] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                            {featuredProjects.map((project, index) => (
-                                <motion.div
-                                    key={project.id}
-                                    initial={{ opacity: 0, scale: 0.95 }}
-                                    whileInView={{ opacity: 1, scale: 1 }}
-                                    viewport={{ once: true }}
-                                    transition={{ delay: index * 0.1 }}
-                                    className="snap-start bg-white dark:bg-gray-900 rounded-xl overflow-hidden shadow-lg cursor-pointer group flex flex-col h-full"
-                                    onClick={() => {
-                                        setSelectedItem(project);
-                                        setDetailType('project');
-                                        setIsDetailOpen(true);
-                                    }}
-                                >
-                                    <div className="h-56 relative shrink-0">
-                                        <ImageCarousel
-                                            images={[
-                                                project.featured_media?.optimized_url || project.featured_media?.url,
-                                                ...(project.project_media?.map(pm => pm.media?.optimized_url || pm.media?.url) || [])
-                                            ].filter(Boolean)}
-                                        />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-5 pointer-events-none">
-                                            <h3 className="text-lg font-bold text-white mb-1">{project.name}</h3>
-                                            <p className="text-gray-300 text-xs line-clamp-2">{project.description}</p>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </div>
-                    )}
-
-                    <div className="text-center mt-8">
-                        <Link to="/projects" className="inline-flex items-center text-green-600 font-medium hover:text-green-700">
-                            See All Projects <ArrowRight className="w-4 h-4 ml-2" />
-                        </Link>
-                    </div>
-                </div>
-            </section>
-
-            {/* Testimonials */}
-            <section className="py-20 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-16">
-                        <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">What Our Clients Say</h2>
-                        <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                            Transforming farms and lives through dedicated service and expertise.
-                        </p>
-                    </div>
-
-                    {testimonialsLoading ? (
-                        <div className="flex justify-center p-12">
-                            <Loader2 className="w-8 h-8 animate-spin text-green-600" />
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                            {testimonials.map((testimonial, index) => (
-                                <motion.div
-                                    key={testimonial.id}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    viewport={{ once: true }}
-                                    transition={{ delay: index * 0.1 }}
-                                    className="bg-green-50 dark:bg-gray-800/50 p-8 rounded-2xl relative"
-                                >
-                                    <Quote className="w-10 h-10 text-green-200 dark:text-green-900/30 absolute top-6 right-6" />
-                                    <div className="flex gap-1 text-yellow-500 mb-4">
-                                        {[...Array(5)].map((_, i) => (
-                                            <Star key={i} className={`w-4 h-4 ${i < (testimonial.rating || 5) ? 'fill-current' : 'text-gray-300'}`} />
+                        {pricesLoading ? (
+                            <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-field" /></div>
+                        ) : (
+                            <div className="panel overflow-x-auto">
+                                <table className="w-full text-sm min-w-[34rem]">
+                                    <thead>
+                                        <tr className="text-left text-quiet border-b border-rule">
+                                            <th scope="col" className="font-medium px-5 py-3">Crop</th>
+                                            <th scope="col" className="font-medium px-5 py-3">Market</th>
+                                            <th scope="col" className="font-medium px-5 py-3 text-right">Price</th>
+                                            <th scope="col" className="font-medium px-5 py-3 text-right">Day change</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-rule">
+                                        {prices.map((item) => (
+                                            <tr key={item.id}>
+                                                <td className="px-5 py-3.5 font-medium">{item.crop_name}</td>
+                                                <td className="px-5 py-3.5 text-quiet">{item.market}</td>
+                                                <td className="px-5 py-3.5 text-right whitespace-nowrap">
+                                                    Ksh {Number(item.price_per_unit).toLocaleString('en-KE')}
+                                                    <span className="text-quiet"> /{item.unit}</span>
+                                                </td>
+                                                <td className="px-5 py-3.5 text-right">
+                                                    <PriceChange value={item.price_change} />
+                                                </td>
+                                            </tr>
                                         ))}
-                                    </div>
-                                    <p className="text-gray-700 dark:text-gray-300 mb-6 italic">"{testimonial.comment}"</p>
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-                                            {testimonial.user_media?.optimized_url ? (
-                                                <img
-                                                    src={testimonial.user_media.optimized_url}
-                                                    alt={testimonial.user_name}
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center bg-green-100 text-green-700 font-bold">
-                                                    {testimonial.user_name?.charAt(0).toUpperCase()}
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold text-gray-900 dark:text-white">{testimonial.user_name}</h4>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </div>
-                    )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                </section>
+            )}
 
-                    <div className="text-center mt-12">
-                        <Link
-                            to="/testimonials"
-                            className="inline-block bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 px-8 py-3 rounded-xl font-bold transition-all transform hover:scale-105 shadow-md hover:shadow-lg"
+            {/* ── Crops ─────────────────────────────────────────────── */}
+            <section className="section bg-white">
+                <div className="shell">
+                    <SectionHead
+                        title="Crops we work with"
+                        action={<Link to="/crops" className="link">All crops</Link>}
+                    >
+                        High-value crops where good agronomy makes a visible difference to the cheque.
+                    </SectionHead>
+                </div>
+
+                {cropsLoading ? (
+                    <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-field" /></div>
+                ) : (
+                    <div className="shell">
+                        <ul className="rail no-scrollbar">
+                            {crops.map((crop) => (
+                                <li
+                                    key={crop.id}
+                                    className="panel overflow-hidden flex flex-col relative hover:border-field transition-colors"
+                                >
+                                    <div className="h-44 bg-husk overflow-hidden">
+                                        <Thumb
+                                            src={crop.featured_media?.optimized_url || crop.featured_media?.url}
+                                            alt={crop.name}
+                                        />
+                                    </div>
+                                    <div className="p-5">
+                                        <h3 className="font-medium text-ink font-sans text-base">
+                                            <button
+                                                type="button"
+                                                onClick={() => openDetail(crop, 'crop')}
+                                                className="text-left after:absolute after:inset-0 after:content-['']"
+                                            >
+                                                {crop.name}
+                                            </button>
+                                        </h3>
+                                        <p className="text-sm text-quiet mt-1.5 line-clamp-3 leading-relaxed">{crop.description}</p>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+            </section>
+
+            {/* ── Field work ────────────────────────────────────────── */}
+            {(projectsLoading || projects.length > 0) && (
+                <section className="section bg-husk">
+                    <div className="shell">
+                        <SectionHead
+                            title="Field work"
+                            action={<Link to="/projects" className="link">All projects</Link>}
                         >
-                            Read More Success Stories
-                        </Link>
+                            Farms we have planned, planted and seen through to harvest.
+                        </SectionHead>
+
+                        {projectsLoading ? (
+                            <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-field" /></div>
+                        ) : (
+                            <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                                {projects.map((project) => (
+                                    <li
+                                        key={project.id}
+                                        className="relative h-64 rounded-[0.625rem] overflow-hidden bg-ink"
+                                    >
+                                        <Thumb
+                                            src={project.featured_media?.optimized_url || project.featured_media?.url}
+                                            alt={project.name}
+                                        />
+                                        <div className="absolute inset-x-0 bottom-0 p-5 bg-gradient-to-t from-ink via-ink/70 to-transparent">
+                                            <h3 className="font-medium text-white font-sans text-base">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openDetail(project, 'project')}
+                                                    className="text-left after:absolute after:inset-0 after:content-['']"
+                                                >
+                                                    {project.name}
+                                                </button>
+                                            </h3>
+                                            <p className="text-sm text-white/70 mt-1 line-clamp-2">{project.description}</p>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+                </section>
+            )}
+
+            {/* ── Field notes. Was a floating pop-up; now it just sits on the page. */}
+            {tips.length > 0 && (
+                <section className="section bg-white">
+                    <div className="shell">
+                        <SectionHead
+                            title="Field notes"
+                            action={<Link to="/blogs" className="link">Read the guides</Link>}
+                        />
+                        <ul className="grid gap-6 md:grid-cols-3">
+                            {tips.map((tip) => (
+                                <li key={tip.id} className="border-l-2 border-bulb pl-5">
+                                    <h3 className="font-medium text-ink">{tip.title}</h3>
+                                    <p className="mt-2 text-[0.9375rem] text-quiet leading-relaxed line-clamp-4">
+                                        {tip.excerpt || tip.content}
+                                    </p>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                </section>
+            )}
+
+            {/* ── About ─────────────────────────────────────────────── */}
+            <About />
+
+            {/* ── Testimonials ──────────────────────────────────────── */}
+            {(testimonialsLoading || testimonials.length > 0) && (
+                <section className="section bg-white">
+                    <div className="shell">
+                        <SectionHead
+                            title="What farmers say"
+                            action={<Link to="/testimonials" className="link">More results</Link>}
+                        />
+
+                        {testimonialsLoading ? (
+                            <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-field" /></div>
+                        ) : (
+                            <ul className="grid gap-6 md:grid-cols-3">
+                                {testimonials.map((t) => (
+                                    <li key={t.id} className="panel p-6 flex flex-col">
+                                        <Quote className="w-6 h-6 text-field-tint shrink-0" aria-hidden="true" />
+                                        <blockquote className="mt-3 flex-1 font-display text-[1.0625rem] leading-relaxed text-ink">
+                                            {t.comment}
+                                        </blockquote>
+                                        <div className="mt-5 pt-5 border-t border-rule flex items-center gap-3">
+                                            <span className="w-10 h-10 rounded-full overflow-hidden bg-field-tint grid place-items-center text-field font-semibold shrink-0">
+                                                {t.user_media?.optimized_url
+                                                    ? <img src={t.user_media.optimized_url} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                                                    : t.user_name?.charAt(0).toUpperCase()}
+                                            </span>
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-medium truncate">{t.user_name}</p>
+                                                <p className="flex gap-0.5 mt-1" aria-label={`${t.rating || 5} out of 5`}>
+                                                    {[...Array(5)].map((_, i) => (
+                                                        <Star
+                                                            key={i}
+                                                            aria-hidden="true"
+                                                            className={`w-3.5 h-3.5 ${i < (t.rating || 5) ? 'fill-bulb text-bulb' : 'text-rule'}`}
+                                                        />
+                                                    ))}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+                </section>
+            )}
+
+            {/* ── Close ─────────────────────────────────────────────── */}
+            <section className="bg-field">
+                <div className="shell py-16 sm:py-20 text-center">
+                    <h2 className="t-h2 text-white">Planning your next crop?</h2>
+                    <p className="mt-4 text-white/75 max-w-xl mx-auto leading-relaxed">
+                        Bring your acreage and your water source. We will work out what to plant,
+                        what it will cost, and what you should expect back.
+                    </p>
+                    <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+                        <Link to="/booking" className="btn btn-onfield">Book a consultation</Link>
+                        <a href={SITE.whatsappHref} target="_blank" rel="noopener noreferrer" className="btn btn-ghost-onfield">
+                            Message on WhatsApp
+                        </a>
                     </div>
                 </div>
             </section>
 
-            {/* CTA Section */}
-            <section className="py-20 bg-green-600 text-white text-center">
-                <div className="max-w-4xl mx-auto px-4">
-                    <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Transform Your Farm?</h2>
-                    <p className="text-xl text-green-50 mb-8">
-                        Book a consultation today and let's start your journey to sustainable and profitable farming.
-                    </p>
-                    <Link
-                        to="/booking"
-                        className="inline-block bg-white text-green-700 dark:bg-green-500 dark:text-white px-10 py-4 rounded-full font-bold text-lg transition-all transform hover:scale-105 hover:bg-green-50 dark:hover:bg-green-400 shadow-xl hover:shadow-2xl"
-                    >
-                        Book an Appointment Now
-                    </Link>
-                </div>
-            </section>
-
-            {/* Detail Modal */}
-            <AnimatePresence>
-                {isDetailOpen && (
-                    <ProjectCropDetailModal
-                        isOpen={isDetailOpen}
-                        onClose={() => setIsDetailOpen(false)}
-                        data={selectedItem}
-                        type={detailType}
-                    />
-                )}
-            </AnimatePresence>
-        </div>
+            {isDetailOpen && (
+                <ProjectCropDetailModal
+                    isOpen={isDetailOpen}
+                    onClose={() => setIsDetailOpen(false)}
+                    data={selectedItem}
+                    type={detailType}
+                />
+            )}
+        </>
     );
 };
 

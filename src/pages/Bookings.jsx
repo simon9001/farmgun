@@ -2,84 +2,106 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useSelector } from 'react-redux';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { Calendar, Clock, Loader2, AlertCircle, Phone, Lock } from 'lucide-react';
+
 import { useCreateBookingMutation, useGetSlotsQuery } from '../features/Api/bookingsApi';
 import { useGetPublicServicesQuery } from '../features/Api/publicApi';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Clock, Loader2, CheckCircle, AlertCircle, Phone } from 'lucide-react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useInitiatePaymentMutation } from '../features/Api/paymentsApi';
+import { selectIsAuthenticated } from '../features/Slice/AuthSlice';
 import PaymentModal from '../components/PaymentModal';
-
-
+import { PageHeader } from '../components/common/Page';
+import { SITE } from '../config/site';
 
 const bookingSchema = z.object({
-    service_id: z.string().uuid('Please select a service'),
-    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date is required'),
-    start_time: z.string().regex(/^\d{2}:\d{2}$/, 'Please select a time slot'),
-    payment_phone: z.string().regex(/^(?:254|\+254|0)?(7|1)\d{8}$/, 'Invalid phone number'),
+    service_id: z.string().uuid('Choose a service'),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Choose a date'),
+    start_time: z.string().regex(/^\d{2}:\d{2}$/, 'Choose a time slot'),
+    payment_phone: z.string().regex(/^(?:254|\+254|0)?(7|1)\d{8}$/, 'Enter a valid Kenyan phone number, e.g. 0712345678'),
     user_notes: z.string().optional(),
     pricing_option: z.string().optional(),
 });
 
+/* Holds a visitor's selection across the sign-in detour, so nobody has to
+   fill this form twice. */
+const DRAFT_KEY = 'farmwithirene:bookingDraft';
 
+const FieldError = ({ children }) => children ? (
+    <p className="field-error flex items-center gap-1.5">
+        <AlertCircle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+        {children}
+    </p>
+) : null;
 
 const Bookings = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const preSelectedServiceId = searchParams.get('serviceId');
+    const isAuthenticated = useSelector(selectIsAuthenticated);
 
     const [createBooking, { isLoading: isBooking, error: bookingError }] = useCreateBookingMutation();
-    const [initiatePayment, { isLoading: isInitiating }] = useInitiatePaymentMutation();
+    const [, { isLoading: isInitiating }] = useInitiatePaymentMutation();
     const { data: servicesData, isLoading: servicesLoading } = useGetPublicServicesQuery({});
 
-    const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
+    const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm({
         resolver: zodResolver(bookingSchema),
         defaultValues: {
             service_id: preSelectedServiceId || '',
-            date: '',
-            start_time: '',
-            payment_phone: '',
-            user_notes: '',
-            pricing_option: ''
-        }
+            date: '', start_time: '', payment_phone: '', user_notes: '', pricing_option: '',
+        },
     });
 
-    // Pre-fill service from URL param
+    // Restore a draft left behind before signing in.
     useEffect(() => {
-        if (preSelectedServiceId) {
-            setValue('service_id', preSelectedServiceId);
-        }
-    }, [preSelectedServiceId, setValue]);
+        try {
+            const saved = sessionStorage.getItem(DRAFT_KEY);
+            if (saved) {
+                reset(JSON.parse(saved));
+                sessionStorage.removeItem(DRAFT_KEY);
+                return;
+            }
+        } catch { /* sessionStorage unavailable — fall through */ }
+
+        if (preSelectedServiceId) setValue('service_id', preSelectedServiceId);
+    }, [preSelectedServiceId, reset, setValue]);
 
     const selectedServiceId = watch('service_id');
     const selectedDate = watch('date');
     const selectedTime = watch('start_time');
+    const selectedOption = watch('pricing_option');
 
-    // Fetch available slots
     const { data: slotsData, isLoading: slotsLoading, isFetching: slotsFetching } = useGetSlotsQuery(
         { date: selectedDate, service_id: selectedServiceId },
         { skip: !selectedDate || !selectedServiceId }
     );
 
+    const services = servicesData?.services || [];
     const availableSlots = slotsData?.slots || [];
+    const activeService = services.find(s => s.id === selectedServiceId);
+    const pricingOptions = activeService?.pricing_options || [];
 
-    const [paymentModalData, setPaymentModalData] = useState({ isOpen: false, bookingId: null, initialPhone: '', amount: 0, serviceName: '' });
-
-
+    const [paymentModalData, setPaymentModalData] = useState({
+        isOpen: false, bookingId: null, initialPhone: '', amount: 0, serviceName: '',
+    });
 
     const onSubmit = async (data) => {
+        // The sign-in wall sits here rather than at the door: a visitor can choose a
+        // service, see real availability and pick a slot before being asked for an
+        // account, and their selection survives the detour.
+        if (!isAuthenticated) {
+            try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(data)); } catch { /* ignore */ }
+            navigate('/login', { state: { from: { pathname: '/booking' } } });
+            return;
+        }
+
         try {
             const result = await createBooking(data).unwrap();
 
-            // Open Payment Modal
-            const selectedService = servicesData?.services?.find(s => s.id === data.service_id);
-            let finalPrice = selectedService?.price;
-
-            if (data.pricing_option && selectedService?.pricing_options) {
-                const opt = selectedService.pricing_options.find(o => o.label === data.pricing_option);
-                if (opt && !opt.is_custom && opt.price) {
-                    finalPrice = opt.price;
-                }
+            let finalPrice = activeService?.price;
+            if (data.pricing_option && pricingOptions.length) {
+                const opt = pricingOptions.find(o => o.label === data.pricing_option);
+                if (opt && !opt.is_custom && opt.price) finalPrice = opt.price;
             }
 
             setPaymentModalData({
@@ -87,239 +109,213 @@ const Bookings = () => {
                 bookingId: result.booking.id,
                 initialPhone: data.payment_phone,
                 amount: finalPrice || result.booking.service.price,
-                serviceName: result.booking.service.name
+                serviceName: result.booking.service.name,
             });
-
-
         } catch (err) {
             console.error('Booking failed:', err);
         }
     };
 
-
-
-
+    const busy = isBooking || isInitiating;
 
     return (
-        <div className="max-w-4xl mx-auto px-4 py-12">
+        <>
             <PaymentModal
                 {...paymentModalData}
                 onClose={() => {
-                    setPaymentModalData({ ...paymentModalData, isOpen: false });
-                    navigate('/dashboard'); // Go to dashboard after closing/finishing
+                    setPaymentModalData(prev => ({ ...prev, isOpen: false }));
+                    navigate('/dashboard');
                 }}
             />
 
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-800"
-            >
-                <div className="bg-green-600 px-8 py-8 text-white">
-                    <h1 className="text-3xl font-bold">Book your Consultation</h1>
-                    <p className="text-green-100 mt-2">Choose a service and pick a time that works for you.</p>
-                </div>
+            <PageHeader
+                title="Book a consultation"
+                lead="Choose what you need, pick a time that works, and we will confirm. Payment happens by M-Pesa once the slot is held."
+                action={<a href={SITE.phoneHref} className="btn btn-outline tnum">Or call {SITE.phoneDisplay}</a>}
+            />
 
-                <div className="p-8">
-                    <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="space-y-6">
-                            {/* Service Selection */}
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                    1. Select Service
-                                </label>
-                                <select
-                                    {...register('service_id')}
-                                    className="w-full rounded-xl border-gray-200 border px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-800 dark:border-gray-700 dark:text-white transition-all"
-                                >
-                                    <option value="">-- Choose a Service --</option>
-                                    {servicesData?.services?.map((service) => (
-                                        <option key={service.id} value={service.id}>
-                                            {service.name}{service.duration_mins && service.duration_mins > 0 ? ` (${service.duration_mins} mins)` : ''} - Ksh {service.price}
-                                        </option>
-                                    ))}
-                                </select>
-                                {errors.service_id && (
-                                    <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                                        <AlertCircle className="w-4 h-4" /> {errors.service_id.message}
-                                    </p>
-                                )}
-                            </div>
+            <div className="shell py-12 sm:py-16">
+                <form onSubmit={handleSubmit(onSubmit)} className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] items-start">
 
-                            {/* Pricing Options */}
-                            {selectedServiceId && servicesData?.services?.find(s => s.id === selectedServiceId)?.pricing_options?.length > 0 && (
-                                <div className="space-y-3">
-                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                        1b. Choose Plan / Option
-                                    </label>
-                                    <div className="grid grid-cols-1 gap-2">
-                                        {servicesData.services.find(s => s.id === selectedServiceId).pricing_options.map((opt, i) => (
-                                            <label
-                                                key={i}
-                                                className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${watch('pricing_option') === opt.label
-                                                        ? 'border-green-600 bg-green-50 dark:bg-green-900/20'
-                                                        : 'border-gray-100 dark:border-gray-800 hover:border-green-200'
-                                                    }`}
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <input
-                                                        type="radio"
-                                                        {...register('pricing_option')}
-                                                        value={opt.label}
-                                                        className="w-4 h-4 text-green-600 focus:ring-green-500"
-                                                    />
-                                                    <div>
-                                                        <span className="font-bold text-gray-900 dark:text-white uppercase text-xs tracking-wider">{opt.label}</span>
-                                                        {opt.note && <p className="text-[10px] text-gray-500 italic">{opt.note}</p>}
-                                                    </div>
-                                                </div>
-                                                <span className="font-bold text-green-600">
-                                                    {opt.is_custom ? 'Quote' : `KES ${opt.price}`}
+                    <div className="panel p-6 sm:p-8 space-y-6">
+
+                        <div>
+                            <label htmlFor="service_id" className="field-label">Service</label>
+                            <select
+                                id="service_id"
+                                {...register('service_id')}
+                                aria-invalid={!!errors.service_id}
+                                className="field-input"
+                                disabled={servicesLoading}
+                            >
+                                <option value="">
+                                    {servicesLoading ? 'Loading services…' : 'Choose a service'}
+                                </option>
+                                {services.map((service) => (
+                                    <option key={service.id} value={service.id}>
+                                        {service.name}
+                                        {service.duration_mins > 0 ? ` — ${service.duration_mins} mins` : ''}
+                                        {service.price ? ` — Ksh ${Number(service.price).toLocaleString('en-KE')}` : ''}
+                                    </option>
+                                ))}
+                            </select>
+                            <FieldError>{errors.service_id?.message}</FieldError>
+                        </div>
+
+                        {pricingOptions.length > 0 && (
+                            <fieldset>
+                                <legend className="field-label">Plan</legend>
+                                <div className="space-y-2">
+                                    {pricingOptions.map((opt, i) => (
+                                        <label
+                                            key={i}
+                                            className={`flex items-center justify-between gap-4 p-4 rounded-md border cursor-pointer transition-colors
+                                                ${selectedOption === opt.label ? 'border-field bg-field-tint' : 'border-rule hover:border-field'}`}
+                                        >
+                                            <span className="flex items-center gap-3">
+                                                <input type="radio" {...register('pricing_option')} value={opt.label}
+                                                    className="w-4 h-4 accent-[#1f4d33]" />
+                                                <span>
+                                                    <span className="block font-medium">{opt.label}</span>
+                                                    {opt.note && <span className="block text-sm text-quiet mt-0.5">{opt.note}</span>}
                                                 </span>
-                                            </label>
-                                        ))}
-                                    </div>
+                                            </span>
+                                            <span className="font-medium tnum whitespace-nowrap">
+                                                {opt.is_custom ? 'On quote' : `Ksh ${Number(opt.price).toLocaleString('en-KE')}`}
+                                            </span>
+                                        </label>
+                                    ))}
                                 </div>
-                            )}
+                            </fieldset>
+                        )}
 
-                            {/* Date Selection */}
+                        <div className="grid sm:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                    2. Pick a Date
-                                </label>
+                                <label htmlFor="date" className="field-label">Date</label>
                                 <div className="relative">
-                                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                    <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-quiet pointer-events-none" aria-hidden="true" />
                                     <input
+                                        id="date"
                                         type="date"
-                                        {...register('date')}
-                                        onChange={(e) => {
-                                            register('date').onChange(e);
-                                            setValue('start_time', ''); // Reset time when date changes
-                                        }}
-                                        className="w-full pl-12 rounded-xl border-gray-200 border px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-800 dark:border-gray-700 dark:text-white transition-all"
+                                        {...register('date', {
+                                            onChange: () => setValue('start_time', ''),
+                                        })}
                                         min={new Date().toISOString().split('T')[0]}
+                                        aria-invalid={!!errors.date}
+                                        className="field-input pl-10"
                                     />
                                 </div>
-                                {errors.date && (
-                                    <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                                        <AlertCircle className="w-4 h-4" /> {errors.date.message}
-                                    </p>
-                                )}
+                                <FieldError>{errors.date?.message}</FieldError>
                             </div>
 
-                            {/* Phone Input */}
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                    3. Your Phone Number
-                                </label>
+                                <label htmlFor="payment_phone" className="field-label">M-Pesa phone number</label>
                                 <div className="relative">
-                                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                    <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-quiet pointer-events-none" aria-hidden="true" />
                                     <input
+                                        id="payment_phone"
                                         type="tel"
+                                        inputMode="tel"
+                                        autoComplete="tel"
+                                        placeholder="0712345678"
                                         {...register('payment_phone')}
-                                        className="w-full pl-12 rounded-xl border-gray-200 border px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-800 dark:border-gray-700 dark:text-white transition-all"
-                                        placeholder="e.g. 0712345678"
+                                        aria-invalid={!!errors.payment_phone}
+                                        className="field-input pl-10 tnum"
                                     />
                                 </div>
-                                {errors.payment_phone && (
-                                    <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                                        <AlertCircle className="w-4 h-4" /> {errors.payment_phone.message}
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* Notes */}
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                    4. Additional Notes (Optional)
-                                </label>
-                                <textarea
-                                    {...register('user_notes')}
-                                    rows={3}
-                                    className="w-full rounded-xl border-gray-200 border px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-800 dark:border-gray-700 dark:text-white transition-all resize-none"
-                                    placeholder="Tell us about your farm or specific needs..."
-                                ></textarea>
+                                <FieldError>{errors.payment_phone?.message}</FieldError>
                             </div>
                         </div>
 
-                        {/* Slot Selection */}
-                        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-6 border border-gray-100 dark:border-gray-800">
-                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
-                                <Clock className="w-5 h-5 text-green-600" /> 5. Select Start Time
+                        <div>
+                            <label htmlFor="user_notes" className="field-label">
+                                Anything we should know? <span className="text-quiet font-normal">(optional)</span>
                             </label>
+                            <textarea
+                                id="user_notes"
+                                rows={3}
+                                {...register('user_notes')}
+                                placeholder="Acreage, water source, what you have grown before."
+                                className="field-input resize-y"
+                            />
+                        </div>
+                    </div>
 
+                    {/* Time slots + submit */}
+                    <div className="panel p-6 lg:sticky lg:top-28">
+                        <h2 className="t-h3 flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-field" aria-hidden="true" />
+                            Available times
+                        </h2>
+
+                        <div className="mt-4" aria-live="polite">
                             {!selectedDate || !selectedServiceId ? (
-                                <div className="h-full flex flex-col items-center justify-center text-center p-8 text-gray-500 italic">
-                                    <Calendar className="w-12 h-12 mb-2 opacity-20" />
-                                    <p>Select a service and date to view available time slots.</p>
-                                </div>
+                                <p className="text-sm text-quiet py-8 text-center">
+                                    Choose a service and a date to see open slots.
+                                </p>
                             ) : slotsLoading || slotsFetching ? (
-                                <div className="flex flex-col items-center justify-center h-48">
-                                    <Loader2 className="w-8 h-8 animate-spin text-green-600 mb-2" />
-                                    <p className="text-sm text-gray-500">Checking availability...</p>
+                                <div className="flex flex-col items-center justify-center py-10 gap-2">
+                                    <Loader2 className="w-5 h-5 animate-spin text-field" />
+                                    <p className="text-sm text-quiet">Checking availability</p>
                                 </div>
                             ) : availableSlots.length > 0 ? (
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                <div className="grid grid-cols-3 gap-2">
                                     {availableSlots.map((slot) => (
                                         <button
                                             key={slot.time}
                                             type="button"
                                             disabled={!slot.available}
-                                            onClick={() => setValue('start_time', slot.time)}
-                                            className={`py-3 px-2 rounded-xl text-sm font-medium transition-all ${selectedTime === slot.time
-                                                ? 'bg-green-600 text-white shadow-lg ring-2 ring-green-600 ring-offset-2'
-                                                : slot.available
-                                                    ? 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-green-500 hover:text-green-600'
-                                                    : 'bg-gray-100 dark:bg-gray-900 text-gray-400 border-transparent cursor-not-allowed line-through'
-                                                }`}
+                                            aria-pressed={selectedTime === slot.time}
+                                            onClick={() => setValue('start_time', slot.time, { shouldValidate: true })}
+                                            className={`py-2.5 rounded-md text-sm tnum border transition-colors
+                                                ${selectedTime === slot.time
+                                                    ? 'bg-field text-white border-field font-medium'
+                                                    : slot.available
+                                                        ? 'bg-white border-rule hover:border-field hover:text-field'
+                                                        : 'bg-husk border-transparent text-quiet/50 line-through cursor-not-allowed'}`}
                                         >
                                             {slot.time}
                                         </button>
                                     ))}
                                 </div>
                             ) : (
-                                <div className="text-center p-8 text-red-500">
-                                    <p>No available slots for the selected date. Please try another day.</p>
-                                </div>
-                            )}
-
-                            {errors.start_time && (
-                                <p className="text-red-500 text-sm mt-4 flex items-center gap-1">
-                                    <AlertCircle className="w-4 h-4" /> {errors.start_time.message}
+                                <p className="text-sm text-quiet py-8 text-center">
+                                    Nothing open on that date. Try another day, or call {SITE.phoneDisplay}.
                                 </p>
                             )}
                         </div>
 
-                        {/* Booking Error */}
+                        <FieldError>{errors.start_time?.message}</FieldError>
+
                         {bookingError && (
-                            <div className="md:col-span-2 p-4 bg-red-50 text-red-600 rounded-xl text-sm flex items-center gap-3">
-                                <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                                <span>{bookingError?.data?.error || 'Unable to complete booking. Please verify details and try again.'}</span>
+                            <div className="mt-4 p-3.5 rounded-md bg-bulb-tint text-bulb text-sm flex items-start gap-2.5">
+                                <AlertCircle className="w-4 h-4 shrink-0 mt-px" aria-hidden="true" />
+                                <span>{bookingError?.data?.error || 'That booking did not go through. Check the details and try again.'}</span>
                             </div>
                         )}
 
-                        {/* Submit Button */}
-                        <div className="md:col-span-2">
-                            <button
-                                type="submit"
-                                disabled={isBooking || !selectedTime}
-                                className="w-full bg-green-600 text-white font-bold py-4 rounded-xl hover:bg-green-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-xl hover:shadow-green-100"
-                            >
-                                {isBooking || isInitiating ? (
-                                    <>
-                                        <Loader2 className="w-6 h-6 animate-spin" />
-                                        Processing...
-                                    </>
-                                ) : (
-                                    'Proceed to Payment'
-                                )}
+                        <button type="submit" disabled={busy || !selectedTime} className="btn btn-primary btn-block mt-5">
+                            {busy
+                                ? <><Loader2 className="w-4 h-4 animate-spin" /> Working</>
+                                : isAuthenticated
+                                    ? 'Confirm and pay'
+                                    : 'Continue'}
+                        </button>
 
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </motion.div >
-        </div >
+                        {!isAuthenticated && (
+                            <p className="mt-3 text-xs text-quiet flex items-start gap-1.5">
+                                <Lock className="w-3.5 h-3.5 shrink-0 mt-px" aria-hidden="true" />
+                                <span>
+                                    You will sign in on the next step so we can hold the slot in your name.
+                                    Your selection is kept.{' '}
+                                    <Link to="/register" className="link">Create an account</Link>
+                                </span>
+                            </p>
+                        )}
+                    </div>
+                </form>
+            </div>
+        </>
     );
 };
 

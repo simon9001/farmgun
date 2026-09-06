@@ -1,22 +1,24 @@
 import React, { memo, useCallback, useMemo, useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Sun, Moon, Menu, LogOut, User, ChevronDown, Settings, LayoutDashboard } from "lucide-react";
+import { Menu, LogOut, User, ChevronDown, LayoutDashboard } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from 'react-redux';
 import { selectIsAuthenticated, selectCurrentUser, logout } from '../features/Slice/AuthSlice';
 import { apiSlice } from '../features/Api/apiSlice';
 import { useLogoutMutation } from '../features/Api/authApi';
+import { SITE } from '../config/site';
 
-const headerVariants = {
-  hidden: { y: -100, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: { type: "spring", stiffness: 120, damping: 20 },
-  },
-};
+// Services is public. A consultancy that hides its service list from visitors
+// cannot convert them.
+const NAV_LINKS = [
+  { to: "/services", label: "Services" },
+  { to: "/crops", label: "Crops" },
+  { to: "/projects", label: "Field work" },
+  { to: "/blogs", label: "Guides" },
+  { to: "/about", label: "About" },
+  { to: "/contact", label: "Contact" },
+];
 
-const Header = memo(({ toggleTheme, currentTheme, onHamburgerClick }) => {
+const Header = memo(({ onHamburgerClick }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -25,11 +27,6 @@ const Header = memo(({ toggleTheme, currentTheme, onHamburgerClick }) => {
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const user = useSelector(selectCurrentUser);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-  const handleThemeToggle = useCallback((e) => {
-    toggleTheme();
-    e.currentTarget.blur();
-  }, [toggleTheme]);
 
   const handleLogout = useCallback(async () => {
     try {
@@ -44,163 +41,143 @@ const Header = memo(({ toggleTheme, currentTheme, onHamburgerClick }) => {
     }
   }, [dispatch, logoutMutation, navigate]);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
+    if (!isDropdownOpen) return;
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsDropdownOpen(false);
       }
     };
+    const handleEsc = (e) => { if (e.key === "Escape") setIsDropdownOpen(false); };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    document.addEventListener("keydown", handleEsc);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEsc);
+    };
+  }, [isDropdownOpen]);
 
-  const ThemeIcon = useMemo(() => (currentTheme === "light" ? Moon : Sun), [currentTheme]);
+  // Close the account menu whenever the route changes
+  useEffect(() => { setIsDropdownOpen(false); }, [location.pathname]);
 
-  const navLinks = useMemo(() => [
-    { to: "/", label: "Home" },
-    { to: "/about", label: "About" },
-    { to: "/partners", label: "Partners" },
-    { to: "/crops", label: "Crops" },
-    { to: "/blogs", label: "Blogs" },
-    { to: "/contact", label: "Contact" },
-
-    ...(isAuthenticated ? [
-      { to: "/services", label: "Services" }
-    ] : [])
-  ], [isAuthenticated]);
+  const homeHref = useMemo(
+    () => (user?.role === 'admin' ? '/admin' : '/dashboard'),
+    [user?.role]
+  );
 
   return (
-    <motion.header
-      variants={headerVariants}
-      initial="hidden"
-      animate="visible"
-      className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-4 sm:px-8 py-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md shadow-sm border-b border-green-100 dark:border-green-900"
-    >
-      <Link to="/" className="text-xl sm:text-2xl font-bold text-green-700 dark:text-green-500 tracking-tight hover:opacity-80 transition">
-        Farm with Irene
-      </Link>
+    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-rule">
+      <div className="shell flex items-center justify-between h-[4.5rem] gap-6">
 
-      <nav className="hidden md:flex gap-6 items-center">
-        {navLinks.map(link => {
-          const isActive = location.pathname === link.to;
-          return (
-            <Link
-              key={link.to}
-              to={link.to}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors duration-150
-                ${isActive
-                  ? "text-green-700 bg-green-50 dark:text-green-400 dark:bg-green-900/30"
-                  : "text-gray-600 dark:text-gray-300 hover:text-green-600 hover:bg-green-50/50"}`}
-            >
-              {link.label}
-            </Link>
-          );
-        })}
+        <Link to="/" className="shrink-0 flex items-center gap-2.5" aria-label={`${SITE.name}, home`}>
+          <img
+            src={SITE.logo}
+            alt=""
+            width="40"
+            height="40"
+            className="w-9 h-9 sm:w-10 sm:h-10 shrink-0"
+          />
+          <span>
+            <span className="block font-display text-[1.2rem] sm:text-[1.35rem] leading-none font-semibold text-field tracking-tight">
+              {SITE.name}
+            </span>
+            <span className="hidden sm:block text-[0.6875rem] text-quiet mt-1 leading-none">
+              {SITE.tagline}
+            </span>
+          </span>
+        </Link>
 
-        <div className="h-6 w-px bg-gray-200 dark:bg-gray-700 mx-1" />
-
-        <button
-          onClick={handleThemeToggle}
-          className="p-2 rounded-full text-gray-500 hover:text-green-600 transition-colors"
-          aria-label="Toggle theme"
-        >
-          <ThemeIcon className="w-5 h-5" />
-        </button>
-
-        {isAuthenticated ? (
-          <div className="relative ml-2" ref={dropdownRef}>
-            <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center gap-2 p-1 pr-3 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all border border-transparent hover:border-gray-200 dark:hover:border-gray-700"
-            >
-              <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center text-green-700 dark:text-green-400 overflow-hidden shadow-inner font-bold">
-                {user?.avatar ? (
-                  <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
-                ) : (
-                  user?.name?.[0]?.toUpperCase() || <User size={18} />
+        <nav className="hidden lg:flex items-center gap-1" aria-label="Main">
+          {NAV_LINKS.map(link => {
+            const isActive = location.pathname === link.to;
+            return (
+              <Link
+                key={link.to}
+                to={link.to}
+                aria-current={isActive ? "page" : undefined}
+                className={`relative px-3 py-2 text-[0.9375rem] rounded-md transition-colors duration-150
+                  ${isActive ? "text-ink font-medium" : "text-quiet hover:text-field"}`}
+              >
+                {link.label}
+                {isActive && (
+                  <span className="absolute left-3 right-3 -bottom-px h-0.5 bg-bulb rounded-full" />
                 )}
-              </div>
-              <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
-            </button>
+              </Link>
+            );
+          })}
+        </nav>
 
-            <AnimatePresence>
+        <div className="flex items-center gap-2 shrink-0">
+          <Link to="/booking" className="btn btn-primary btn-sm hidden sm:inline-flex">
+            Book a consultation
+          </Link>
+
+          {isAuthenticated ? (
+            <div className="relative hidden lg:block" ref={dropdownRef}>
+              <button
+                onClick={() => setIsDropdownOpen(v => !v)}
+                aria-expanded={isDropdownOpen}
+                aria-haspopup="menu"
+                className="flex items-center gap-1.5 p-1 pr-2 rounded-full border border-transparent hover:border-rule transition-colors"
+              >
+                <span className="w-8 h-8 rounded-full bg-field-tint flex items-center justify-center text-field overflow-hidden font-semibold text-sm">
+                  {user?.avatar
+                    ? <img src={user.avatar} alt="" className="w-full h-full object-cover" />
+                    : (user?.name?.[0]?.toUpperCase() || <User size={16} />)}
+                </span>
+                <ChevronDown className={`w-4 h-4 text-quiet transition-transform duration-150 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
               {isDropdownOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  transition={{ duration: 0.15, ease: "easeOut" }}
-                  className="absolute right-0 mt-3 w-56 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800 overflow-hidden z-[60]"
+                <div
+                  role="menu"
+                  className="absolute right-0 mt-2 w-60 bg-white rounded-lg border border-rule shadow-lg overflow-hidden z-[60]"
                 >
-                  <div className="px-4 py-3 bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
-                    <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{user?.name}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{user?.email}</p>
-                    {user?.role === 'admin' && (
-                      <span className="mt-1.5 inline-block px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-[10px] font-bold rounded uppercase tracking-wider">
-                        Administrator
-                      </span>
-                    )}
+                  <div className="px-4 py-3 border-b border-rule bg-husk">
+                    <p className="text-sm font-medium truncate">{user?.name}</p>
+                    <p className="text-xs text-quiet truncate mt-0.5">{user?.email}</p>
                   </div>
 
                   <div className="p-1.5">
-                    <Link
-                      to={user?.role === 'admin' ? "/admin" : "/dashboard"}
-                      onClick={() => setIsDropdownOpen(false)}
-                      className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-700 dark:hover:text-green-400 rounded-xl transition-colors group"
-                    >
-                      <LayoutDashboard className="w-4 h-4 text-gray-400 group-hover:text-green-600 transition-colors" />
-                      {user?.role === 'admin' ? 'Admin Panel' : 'My Dashboard'}
+                    <Link to={homeHref} role="menuitem" className="flex items-center gap-2.5 px-3 py-2 text-sm rounded-md hover:bg-husk transition-colors">
+                      <LayoutDashboard className="w-4 h-4 text-quiet" />
+                      {user?.role === 'admin' ? 'Admin panel' : 'My dashboard'}
                     </Link>
-
-                    <Link
-                      to="/profile"
-                      onClick={() => setIsDropdownOpen(false)}
-                      className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-700 dark:hover:text-green-400 rounded-xl transition-colors group"
-                    >
-                      <User size={16} className="text-gray-400 group-hover:text-green-600 transition-colors" />
-                      Profile Settings
+                    <Link to="/profile" role="menuitem" className="flex items-center gap-2.5 px-3 py-2 text-sm rounded-md hover:bg-husk transition-colors">
+                      <User size={16} className="text-quiet" />
+                      Profile
                     </Link>
                   </div>
 
-                  <div className="p-1.5 border-t border-gray-100 dark:border-gray-800">
+                  <div className="p-1.5 border-t border-rule">
                     <button
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors group"
+                      role="menuitem"
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-bulb rounded-md hover:bg-bulb-tint transition-colors"
                     >
-                      <LogOut size={16} className="text-red-400 group-hover:text-red-600 transition-colors" />
-                      Sign Out
+                      <LogOut size={16} />
+                      Sign out
                     </button>
                   </div>
-                </motion.div>
+                </div>
               )}
-            </AnimatePresence>
-          </div>
-        ) : (
-          <Link
-            to="/login"
-            className="ml-2 px-4 py-2 rounded-full bg-green-600 text-white text-sm font-semibold hover:bg-green-700 transition-colors shadow-sm"
-          >
-            Sign In
-          </Link>
-        )}
-      </nav>
+            </div>
+          ) : (
+            <Link to="/login" className="hidden lg:inline-flex px-3 py-2 text-[0.9375rem] text-quiet hover:text-field transition-colors">
+              Sign in
+            </Link>
+          )}
 
-      <div className="flex md:hidden items-center gap-2">
-        <button
-          onClick={handleThemeToggle}
-          className="p-2 text-gray-500"
-        >
-          <ThemeIcon className="w-5 h-5" />
-        </button>
-        <button
-          onClick={onHamburgerClick}
-          className="p-2 text-gray-600 hover:text-green-600"
-        >
-          <Menu className="w-6 h-6" />
-        </button>
+          <button
+            onClick={onHamburgerClick}
+            className="lg:hidden p-2 -mr-2 text-ink"
+            aria-label="Open menu"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+        </div>
       </div>
-    </motion.header>
+    </header>
   );
 });
 
